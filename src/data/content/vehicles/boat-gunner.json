@@ -1,0 +1,22 @@
+{
+  "id": "boat-gunner",
+  "name": "Gunboat",
+  "class": "boat",
+  "movement": {
+    "model": "boat",
+    "mass": 8.0,
+    "maxSpeed": 8.0,
+    "accelForce": 26.0,
+    "linearDamping": 2.0,
+    "angularDamping": 10.0,
+    "turnRate": 95,
+    "hoverLift": false,
+    "hoverHeight": 0.0,
+    "bankAngleMax": 0
+  },
+  "stats": { "maxHealth": 140, "armor": 0.2 },
+  "visual": { "scale": 1.15 },
+  "weaponId": "weapon-gunboat",
+  "upgradeTreeId": "",
+  "unlock": { "type": "start" }
+}

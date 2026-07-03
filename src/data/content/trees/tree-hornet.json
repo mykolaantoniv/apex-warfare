@@ -1,0 +1,22 @@
+{
+  "id": "tree-hornet",
+  "vehicleId": "heli-hornet",
+  "branches": {
+    "armor": [
+      { "id": "a1", "label": "Plating I", "path": "stats.maxHealth", "add": 25, "mul": 1, "cost": 80, "requires": "" },
+      { "id": "a2", "label": "Plating II", "path": "stats.armor", "add": 0.06, "mul": 1, "cost": 160, "requires": "a1" }
+    ],
+    "damage": [
+      { "id": "d1", "label": "Hot Rounds", "path": "weapon.damage", "add": 0, "mul": 1.15, "cost": 100, "requires": "" },
+      { "id": "d2", "label": "AP Rounds", "path": "weapon.damage", "add": 0, "mul": 1.18, "cost": 210, "requires": "d1" }
+    ],
+    "mobility": [
+      { "id": "m1", "label": "Tuned Rotor", "path": "movement.maxSpeed", "add": 1.5, "mul": 1, "cost": 90, "requires": "" },
+      { "id": "m2", "label": "Lightweight", "path": "movement.accelForce", "add": 6, "mul": 1, "cost": 150, "requires": "m1" }
+    ],
+    "special": [
+      { "id": "s1", "label": "Open Bolt", "path": "weapon.fireRate", "add": 0, "mul": 1.2, "cost": 140, "requires": "" },
+      { "id": "s2", "label": "Fast Loader", "path": "weapon.reloadTime", "add": 0, "mul": 0.8, "cost": 180, "requires": "s1" }
+    ]
+  }
+}

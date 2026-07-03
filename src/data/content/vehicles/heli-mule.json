@@ -1,0 +1,22 @@
+{
+  "id": "heli-mule",
+  "name": "Mule",
+  "class": "transport-heli",
+  "movement": {
+    "model": "heli",
+    "mass": 3.0,
+    "maxSpeed": 6.5,
+    "accelForce": 16.0,
+    "linearDamping": 1.6,
+    "angularDamping": 9.0,
+    "turnRate": 180,
+    "hoverLift": true,
+    "hoverHeight": 3.2,
+    "bankAngleMax": 16
+  },
+  "stats": { "maxHealth": 170, "armor": 0.28 },
+  "visual": { "scale": 1.25 },
+  "weaponId": "weapon-mule-cannon",
+  "upgradeTreeId": "tree-mule",
+  "unlock": { "type": "stars", "required": 5 }
+}

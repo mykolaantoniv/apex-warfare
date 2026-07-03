@@ -1,0 +1,13 @@
+{
+  "id": "weapon-boulder-cannon",
+  "name": "Siege Gun",
+  "damage": 32,
+  "fireRate": 1.5,
+  "magazine": 8,
+  "reloadTime": 2.6,
+  "speed": 52,
+  "lifetime": 2.0,
+  "splashRadius": 1.6,
+  "spread": 1.0,
+  "recoil": 0.55
+}

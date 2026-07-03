@@ -1,0 +1,22 @@
+{
+  "id": "heli-pest",
+  "name": "Pest",
+  "class": "attack-heli",
+  "movement": {
+    "model": "heli",
+    "mass": 1.8,
+    "maxSpeed": 7.0,
+    "accelForce": 18.0,
+    "linearDamping": 1.5,
+    "angularDamping": 8.0,
+    "turnRate": 200,
+    "hoverLift": true,
+    "hoverHeight": 3.0,
+    "bankAngleMax": 22
+  },
+  "stats": { "maxHealth": 55, "armor": 0.05 },
+  "visual": { "scale": 0.92 },
+  "weaponId": "weapon-pest-cannon",
+  "upgradeTreeId": "",
+  "unlock": { "type": "start" }
+}

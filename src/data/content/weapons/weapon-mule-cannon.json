@@ -1,0 +1,13 @@
+{
+  "id": "weapon-mule-cannon",
+  "name": "Heavy Cannon",
+  "damage": 16,
+  "fireRate": 3,
+  "magazine": 24,
+  "reloadTime": 2.2,
+  "speed": 42,
+  "lifetime": 1.6,
+  "splashRadius": 0.6,
+  "spread": 2.2,
+  "recoil": 0.28
+}

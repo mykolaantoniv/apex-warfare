@@ -1,0 +1,13 @@
+{
+  "id": "weapon-talon-cannon",
+  "name": "Strafe Cannon",
+  "damage": 11,
+  "fireRate": 6,
+  "magazine": 50,
+  "reloadTime": 1.6,
+  "speed": 62,
+  "lifetime": 1.4,
+  "splashRadius": 0,
+  "spread": 1.8,
+  "recoil": 0.12
+}

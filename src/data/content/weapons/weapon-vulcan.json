@@ -1,0 +1,13 @@
+{
+  "id": "weapon-vulcan",
+  "name": "Vulcan",
+  "damage": 9,
+  "fireRate": 7,
+  "magazine": 40,
+  "reloadTime": 1.8,
+  "speed": 48,
+  "lifetime": 1.4,
+  "splashRadius": 0,
+  "spread": 2.5,
+  "recoil": 0.15
+}

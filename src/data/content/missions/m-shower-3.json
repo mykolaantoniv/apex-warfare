@@ -1,0 +1,10 @@
+{
+  "id": "m-shower-3",
+  "mapId": "map-shower",
+  "name": "Drain the Brute (Boss)",
+  "type": "deathmatch",
+  "killTarget": 4,
+  "enemyRoster": ["heli-brute", "boat-gunner", "tank-raider", "bike-scout"],
+  "finale": true,
+  "unlock": { "type": "previous" }
+}

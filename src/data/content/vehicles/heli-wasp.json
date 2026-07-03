@@ -1,0 +1,22 @@
+{
+  "id": "heli-wasp",
+  "name": "Wasp",
+  "class": "attack-heli",
+  "movement": {
+    "model": "heli",
+    "mass": 1.3,
+    "maxSpeed": 10.5,
+    "accelForce": 24.0,
+    "linearDamping": 1.3,
+    "angularDamping": 8.0,
+    "turnRate": 260,
+    "hoverLift": true,
+    "hoverHeight": 3.2,
+    "bankAngleMax": 26
+  },
+  "stats": { "maxHealth": 35, "armor": 0.0 },
+  "visual": { "scale": 0.8 },
+  "weaponId": "weapon-wasp-mg",
+  "upgradeTreeId": "",
+  "unlock": { "type": "start" }
+}

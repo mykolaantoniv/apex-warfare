@@ -1,0 +1,13 @@
+{
+  "id": "weapon-brute-cannon",
+  "name": "Brute Cannon",
+  "damage": 22,
+  "fireRate": 1.2,
+  "magazine": 6,
+  "reloadTime": 3,
+  "speed": 40,
+  "lifetime": 2,
+  "splashRadius": 1.5,
+  "spread": 2,
+  "recoil": 0.5
+}

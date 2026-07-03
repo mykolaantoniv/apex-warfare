@@ -1,0 +1,22 @@
+{
+  "id": "tree-talon",
+  "vehicleId": "jet-talon",
+  "branches": {
+    "armor": [
+      { "id": "a1", "label": "Composite I", "path": "stats.maxHealth", "add": 20, "mul": 1, "cost": 120, "requires": "" },
+      { "id": "a2", "label": "Composite II", "path": "stats.armor", "add": 0.05, "mul": 1, "cost": 210, "requires": "a1" }
+    ],
+    "damage": [
+      { "id": "d1", "label": "Hot Barrel", "path": "weapon.damage", "add": 0, "mul": 1.16, "cost": 140, "requires": "" },
+      { "id": "d2", "label": "Twin Link", "path": "weapon.fireRate", "add": 0, "mul": 1.25, "cost": 230, "requires": "d1" }
+    ],
+    "mobility": [
+      { "id": "m1", "label": "Afterburner I", "path": "movement.maxSpeed", "add": 2.5, "mul": 1, "cost": 130, "requires": "" },
+      { "id": "m2", "label": "Fly-by-wire", "path": "movement.turnRate", "add": 40, "mul": 1, "cost": 200, "requires": "m1" }
+    ],
+    "special": [
+      { "id": "s1", "label": "Belt Feed", "path": "weapon.magazine", "add": 20, "mul": 1, "cost": 150, "requires": "" },
+      { "id": "s2", "label": "Quick Cycle", "path": "weapon.reloadTime", "add": 0, "mul": 0.8, "cost": 190, "requires": "s1" }
+    ]
+  }
+}

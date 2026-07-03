@@ -1,0 +1,10 @@
+{
+  "id": "m-locker-3",
+  "mapId": "map-locker",
+  "name": "Final Inspection (Boss)",
+  "type": "deathmatch",
+  "killTarget": 4,
+  "enemyRoster": ["heli-brute", "tank-raider", "boat-gunner", "bike-scout"],
+  "finale": true,
+  "unlock": { "type": "previous" }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "m-shower-2",
+  "mapId": "map-shower",
+  "name": "Hold the Crossing",
+  "type": "capture",
+  "killTarget": 3,
+  "enemyRoster": ["heli-pest", "bike-scout", "boat-gunner", "soldier-grunt"],
+  "finale": false,
+  "zone": { "x": 0, "z": 0, "radius": 14, "hold": 22, "contested": true },
+  "unlock": { "type": "previous" }
+}

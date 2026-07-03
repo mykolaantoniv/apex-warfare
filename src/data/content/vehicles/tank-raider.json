@@ -1,0 +1,22 @@
+{
+  "id": "tank-raider",
+  "name": "Raider",
+  "class": "tank",
+  "movement": {
+    "model": "tank",
+    "mass": 10.0,
+    "maxSpeed": 5.5,
+    "accelForce": 45.0,
+    "linearDamping": 3.0,
+    "angularDamping": 12.0,
+    "turnRate": 130,
+    "hoverLift": false,
+    "hoverHeight": 0.0,
+    "bankAngleMax": 6
+  },
+  "stats": { "maxHealth": 190, "armor": 0.32 },
+  "visual": { "scale": 1.1 },
+  "weaponId": "weapon-raider-cannon",
+  "upgradeTreeId": "",
+  "unlock": { "type": "start" }
+}

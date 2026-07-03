@@ -1,0 +1,13 @@
+{
+  "id": "weapon-rifle",
+  "name": "Service Rifle",
+  "damage": 5,
+  "fireRate": 4,
+  "magazine": 20,
+  "reloadTime": 2.4,
+  "speed": 55,
+  "lifetime": 1.4,
+  "splashRadius": 0,
+  "spread": 2.5,
+  "recoil": 0.05
+}

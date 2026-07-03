@@ -1,0 +1,22 @@
+{
+  "id": "tree-boulder",
+  "vehicleId": "tank-boulder",
+  "branches": {
+    "armor": [
+      { "id": "a1", "label": "Glacis I", "path": "stats.maxHealth", "add": 60, "mul": 1, "cost": 140, "requires": "" },
+      { "id": "a2", "label": "Glacis II", "path": "stats.armor", "add": 0.1, "mul": 1, "cost": 240, "requires": "a1" }
+    ],
+    "damage": [
+      { "id": "d1", "label": "HE Shells", "path": "weapon.damage", "add": 0, "mul": 1.2, "cost": 160, "requires": "" },
+      { "id": "d2", "label": "Wide Blast", "path": "weapon.splashRadius", "add": 0.8, "mul": 1, "cost": 250, "requires": "d1" }
+    ],
+    "mobility": [
+      { "id": "m1", "label": "Sport Treads", "path": "movement.maxSpeed", "add": 1.2, "mul": 1, "cost": 120, "requires": "" },
+      { "id": "m2", "label": "Big Motor", "path": "movement.accelForce", "add": 12, "mul": 1, "cost": 200, "requires": "m1" }
+    ],
+    "special": [
+      { "id": "s1", "label": "Autoloader", "path": "weapon.reloadTime", "add": 0, "mul": 0.78, "cost": 180, "requires": "" },
+      { "id": "s2", "label": "Ready Rack", "path": "weapon.magazine", "add": 4, "mul": 1, "cost": 210, "requires": "s1" }
+    ]
+  }
+}

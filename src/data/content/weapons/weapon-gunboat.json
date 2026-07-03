@@ -1,0 +1,13 @@
+{
+  "id": "weapon-gunboat",
+  "name": "Gunboat Cannon",
+  "damage": 14,
+  "fireRate": 1.6,
+  "magazine": 8,
+  "reloadTime": 2.8,
+  "speed": 48,
+  "lifetime": 2.2,
+  "splashRadius": 1.2,
+  "spread": 1.5,
+  "recoil": 0.35
+}

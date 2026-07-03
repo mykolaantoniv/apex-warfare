@@ -1,0 +1,22 @@
+{
+  "id": "heli-hornet",
+  "name": "Hornet",
+  "class": "attack-heli",
+  "movement": {
+    "model": "heli",
+    "mass": 2.0,
+    "maxSpeed": 9.0,
+    "accelForce": 22.0,
+    "linearDamping": 1.4,
+    "angularDamping": 8.0,
+    "turnRate": 240,
+    "hoverLift": true,
+    "hoverHeight": 3.0,
+    "bankAngleMax": 24
+  },
+  "stats": { "maxHealth": 100, "armor": 0.15 },
+  "visual": { "scale": 1.0 },
+  "weaponId": "weapon-vulcan",
+  "upgradeTreeId": "tree-hornet",
+  "unlock": { "type": "start" }
+}

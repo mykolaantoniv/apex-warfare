@@ -1,0 +1,22 @@
+{
+  "id": "bike-scout",
+  "name": "Scout Buggy",
+  "class": "bike",
+  "movement": {
+    "model": "bike",
+    "mass": 3.0,
+    "maxSpeed": 12.0,
+    "accelForce": 40.0,
+    "linearDamping": 2.2,
+    "angularDamping": 12.0,
+    "turnRate": 210,
+    "hoverLift": false,
+    "hoverHeight": 0.0,
+    "bankAngleMax": 0
+  },
+  "stats": { "maxHealth": 55, "armor": 0.05 },
+  "visual": { "scale": 1.1 },
+  "weaponId": "weapon-scout-mg",
+  "upgradeTreeId": "",
+  "unlock": { "type": "start" }
+}

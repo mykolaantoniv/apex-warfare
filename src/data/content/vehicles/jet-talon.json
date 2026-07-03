@@ -1,0 +1,22 @@
+{
+  "id": "jet-talon",
+  "name": "Talon",
+  "class": "jet",
+  "movement": {
+    "model": "jet",
+    "mass": 2.0,
+    "maxSpeed": 15.0,
+    "accelForce": 12.0,
+    "linearDamping": 0.5,
+    "angularDamping": 6.0,
+    "turnRate": 150,
+    "hoverLift": true,
+    "hoverHeight": 3.5,
+    "bankAngleMax": 42
+  },
+  "stats": { "maxHealth": 78, "armor": 0.08 },
+  "visual": { "scale": 1.05 },
+  "weaponId": "weapon-talon-cannon",
+  "upgradeTreeId": "tree-talon",
+  "unlock": { "type": "stars", "required": 13 }
+}

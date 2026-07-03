@@ -1,0 +1,13 @@
+{
+  "id": "weapon-scout-mg",
+  "name": "Scout MG",
+  "damage": 6,
+  "fireRate": 6,
+  "magazine": 30,
+  "reloadTime": 2.2,
+  "speed": 65,
+  "lifetime": 1.6,
+  "splashRadius": 0,
+  "spread": 3,
+  "recoil": 0.15
+}

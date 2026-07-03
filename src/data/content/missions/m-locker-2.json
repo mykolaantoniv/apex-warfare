@@ -1,0 +1,12 @@
+{
+  "id": "m-locker-2",
+  "mapId": "map-locker",
+  "name": "Convoy Run",
+  "type": "escort",
+  "killTarget": 3,
+  "enemyRoster": ["heli-pest", "boat-gunner", "bike-scout", "soldier-grunt"],
+  "finale": false,
+  "zone": { "x": 60, "z": 58, "radius": 13, "hold": 6, "contested": false },
+  "ally": { "vehicleId": "tank-raider", "spawn": [-58, -52] },
+  "unlock": { "type": "previous" }
+}

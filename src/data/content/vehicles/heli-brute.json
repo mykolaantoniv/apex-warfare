@@ -1,0 +1,22 @@
+{
+  "id": "heli-brute",
+  "name": "Brute",
+  "class": "attack-heli",
+  "movement": {
+    "model": "heli",
+    "mass": 5.0,
+    "maxSpeed": 5.0,
+    "accelForce": 14.0,
+    "linearDamping": 1.8,
+    "angularDamping": 10.0,
+    "turnRate": 130,
+    "hoverLift": true,
+    "hoverHeight": 3.5,
+    "bankAngleMax": 12
+  },
+  "stats": { "maxHealth": 420, "armor": 0.35 },
+  "visual": { "scale": 1.6 },
+  "weaponId": "weapon-brute-cannon",
+  "upgradeTreeId": "",
+  "unlock": { "type": "start" }
+}

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a0e14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Apex Warfare</title>
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+  </head>
+  <body>
+    <!-- 3D render target -->
+    <canvas id="renderCanvas" touch-action="none"></canvas>
+
+    <!-- Tap-to-start (also unlocks Web Audio) -->
+    <div id="bootScreen" class="boot-screen">
+      <div class="boot-title">APEX&nbsp;WARFARE</div>
+      <div class="boot-sub">Shower Arena · Hornet</div>
+      <button id="bootStart" class="boot-start">TAP TO DEPLOY</button>
+      <div id="bootStatus" class="boot-status">loading engine…</div>
+    </div>
+
+    <!-- In-mission HUD (sleek military) -->
+    <div id="hud" class="hud hidden">
+      <div class="hud-top">
+        <div id="hudMission" class="hud-mission">MISSION</div>
+        <div class="hud-stars">★★☆</div>
+        <div class="hud-timer" id="hudTimer">0:00</div>
+      </div>
+      <div id="hudObjective" class="hud-objective hidden">
+        <span class="obj-label" id="hudObjectiveLabel">CAPTURE</span>
+        <div class="obj-bar"><div class="obj-fill" id="hudObjectiveFill"></div></div>
+        <span class="obj-pct" id="hudObjectivePct">0%</span>
+      </div>
+      <div class="hud-left">
+        <div class="panel hp-panel">
+          <span class="panel-label">HP</span>
+          <div class="bar"><div class="bar-fill" id="hudHp" style="width: 100%"></div></div>
+        </div>
+        <div class="hud-scrap">SCRAP <b id="hudScrap">0</b></div>
+      </div>
+      <div class="hud-right">
+        <div class="hud-enemies">ENEMIES <b id="hudEnemies">▲0</b></div>
+      </div>
+      <div class="hud-bottom">
+        <div class="ammo" id="hudAmmo">ROCKETS x8</div>
+        <div class="panel special-panel">
+          <span class="panel-label">SPECIAL</span>
+          <div class="bar"><div class="bar-fill cyan" id="hudSpecial" style="width: 100%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Combat-feel overlays -->
+    <div id="lowHp" class="lowhp"></div>
+    <div id="hitMarker" class="hit-marker"></div>
+    <div id="banner" class="banner"></div>
+    <div id="killfeed" class="killfeed"></div>
+    <canvas id="radar" width="150" height="150" class="radar-map"></canvas>
+
+    <!-- Twin-stick controls: fixed pads (reference style) -->
+    <div class="pad-deco left" aria-hidden="true">
+      <span class="dpad up">▲</span>
+      <span class="dpad right">▶</span>
+      <span class="dpad down">▼</span>
+      <span class="dpad left">◀</span>
+    </div>
+    <div id="stickLeft" class="pad left"></div>
+
+    <div id="fireRing" class="fire-ring" aria-hidden="true"></div>
+    <button id="fireBtn" class="fire-btn" type="button">FIRE</button>
+    <button id="switchBtn" class="ctl-btn switch" type="button">⊕<span class="ctl-label">SWITCH</span></button>
+    <button id="specialBtn" class="ctl-btn special" type="button">✚<span class="ctl-label">REPAIR</span></button>
+
+    <!-- Menus / garage / mission select / results (built by Screens) -->
+    <div id="screens" class="screens-root hidden"></div>
+
+    <!-- perf debug overlay (toggle with `) -->
+    <pre id="debugHud" class="debug-hud hidden"></pre>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "id": "soldier-grunt",
+  "name": "Grunt",
+  "class": "soldier",
+  "movement": {
+    "model": "soldier",
+    "mass": 2.0,
+    "maxSpeed": 4.0,
+    "accelForce": 35.0,
+    "linearDamping": 3.5,
+    "angularDamping": 14.0,
+    "turnRate": 180,
+    "hoverLift": false,
+    "hoverHeight": 0.0,
+    "bankAngleMax": 0
+  },
+  "stats": { "maxHealth": 30, "armor": 0.0 },
+  "visual": { "scale": 1.0 },
+  "weaponId": "weapon-rifle",
+  "upgradeTreeId": "",
+  "unlock": { "type": "start" }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "m-locker-1",
+  "mapId": "map-locker",
+  "name": "Lights Out",
+  "type": "deathmatch",
+  "killTarget": 8,
+  "enemyRoster": ["heli-wasp", "tank-raider", "bike-scout", "soldier-grunt"],
+  "finale": false,
+  "unlock": { "type": "stars", "required": 15 }
+}

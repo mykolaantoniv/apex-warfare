@@ -1,0 +1,13 @@
+{
+  "id": "weapon-pest-cannon",
+  "name": "Pest Cannon",
+  "damage": 7,
+  "fireRate": 2.2,
+  "magazine": 12,
+  "reloadTime": 2.6,
+  "speed": 34,
+  "lifetime": 1.8,
+  "splashRadius": 0,
+  "spread": 3.5,
+  "recoil": 0.1
+}

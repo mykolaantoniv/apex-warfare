@@ -1,0 +1,11 @@
+{
+  "id": "m-sink-2",
+  "mapId": "map-sink",
+  "name": "River Extraction",
+  "type": "extract",
+  "killTarget": 3,
+  "enemyRoster": ["heli-wasp", "boat-gunner", "soldier-grunt", "bike-scout"],
+  "finale": false,
+  "zone": { "x": 0, "z": 58, "radius": 12, "hold": 4, "contested": false },
+  "unlock": { "type": "previous" }
+}

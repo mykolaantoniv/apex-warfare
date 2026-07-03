@@ -1,0 +1,10 @@
+{
+  "id": "m-sink-1",
+  "mapId": "map-sink",
+  "name": "Splashdown",
+  "type": "deathmatch",
+  "killTarget": 6,
+  "enemyRoster": ["heli-pest", "boat-gunner", "bike-scout", "tank-raider"],
+  "finale": false,
+  "unlock": { "type": "stars", "required": 6 }
+}

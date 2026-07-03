@@ -1,0 +1,10 @@
+{
+  "id": "m-shower-1",
+  "mapId": "map-shower",
+  "name": "Wet Work",
+  "type": "deathmatch",
+  "killTarget": 6,
+  "enemyRoster": ["heli-pest", "bike-scout", "soldier-grunt", "boat-gunner"],
+  "finale": false,
+  "unlock": { "type": "start" }
+}

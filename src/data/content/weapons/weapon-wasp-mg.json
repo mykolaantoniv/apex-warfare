@@ -1,0 +1,13 @@
+{
+  "id": "weapon-wasp-mg",
+  "name": "Stinger MG",
+  "damage": 4,
+  "fireRate": 8,
+  "magazine": 60,
+  "reloadTime": 1.5,
+  "speed": 55,
+  "lifetime": 1.3,
+  "splashRadius": 0,
+  "spread": 4,
+  "recoil": 0.05
+}

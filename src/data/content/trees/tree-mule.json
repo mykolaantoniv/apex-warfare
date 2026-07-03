@@ -1,0 +1,22 @@
+{
+  "id": "tree-mule",
+  "vehicleId": "heli-mule",
+  "branches": {
+    "armor": [
+      { "id": "a1", "label": "Bulkhead I", "path": "stats.maxHealth", "add": 40, "mul": 1, "cost": 110, "requires": "" },
+      { "id": "a2", "label": "Bulkhead II", "path": "stats.armor", "add": 0.08, "mul": 1, "cost": 200, "requires": "a1" }
+    ],
+    "damage": [
+      { "id": "d1", "label": "Bigger Shells", "path": "weapon.damage", "add": 0, "mul": 1.18, "cost": 130, "requires": "" },
+      { "id": "d2", "label": "Wider Splash", "path": "weapon.splashRadius", "add": 0.5, "mul": 1, "cost": 220, "requires": "d1" }
+    ],
+    "mobility": [
+      { "id": "m1", "label": "Twin Engine", "path": "movement.maxSpeed", "add": 1.2, "mul": 1, "cost": 110, "requires": "" },
+      { "id": "m2", "label": "Trim Weight", "path": "movement.accelForce", "add": 5, "mul": 1, "cost": 170, "requires": "m1" }
+    ],
+    "special": [
+      { "id": "s1", "label": "Auto Feed", "path": "weapon.fireRate", "add": 0, "mul": 1.2, "cost": 160, "requires": "" },
+      { "id": "s2", "label": "Drum Mag", "path": "weapon.magazine", "add": 8, "mul": 1, "cost": 190, "requires": "s1" }
+    ]
+  }
+}

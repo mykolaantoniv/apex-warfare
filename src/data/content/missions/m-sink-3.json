@@ -1,0 +1,10 @@
+{
+  "id": "m-sink-3",
+  "mapId": "map-sink",
+  "name": "Faucet Fury (Boss)",
+  "type": "deathmatch",
+  "killTarget": 3,
+  "enemyRoster": ["heli-brute", "boat-gunner", "tank-raider", "heli-wasp"],
+  "finale": true,
+  "unlock": { "type": "previous" }
+}
