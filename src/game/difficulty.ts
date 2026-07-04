@@ -9,9 +9,11 @@ export interface MissionDifficulty {
   spawnInterval: number;
 }
 
-const TOTAL = 9;
+// Campaign length is derived from the actual mission order (was hardcoded to 9 while the campaign
+// grew to 13, which pushed late-mission difficulty + star pars off the intended curve).
+const TOTAL = Content.missionOrder.length;
 
-/** Position of a mission in the canonical campaign order (0..8). */
+/** Position of a mission in the canonical campaign order (0..TOTAL-1). */
 export function campaignIndexOf(missionId: string): number {
   const order = Content.missionOrder;
   const i = order.indexOf(missionId as (typeof order)[number]);
@@ -20,7 +22,7 @@ export function campaignIndexOf(missionId: string): number {
 
 /** Smooth ramp across the campaign. Tune the whole game from here. */
 export function difficultyFor(index: number): MissionDifficulty {
-  const d = index / (TOTAL - 1); // 0..1
+  const d = TOTAL > 1 ? index / (TOTAL - 1) : 0; // 0..1
   return {
     enemyHealthMul: 1 + 1.0 * d, // 1.0 -> 2.0
     enemyDamageMul: 0.55 + 0.35 * d, // 0.55 -> 0.9 (forgiving; lock-on will help you)
