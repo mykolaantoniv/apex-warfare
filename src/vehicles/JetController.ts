@@ -13,7 +13,7 @@ import {
 import type { InputState, VehicleConfig } from "../core/types";
 import { clamp, expDamp } from "../core/math";
 import type { VehicleController } from "./VehicleController";
-import { attachGlb, buildJetModel } from "./models";
+import { attachGlb, buildJetModel, charAllMaterials } from "./models";
 
 const GRAVITY = 9.81;
 const DEG2RAD = Math.PI / 180;
@@ -76,8 +76,16 @@ export class JetController implements VehicleController {
     this.agg.body.applyImpulse(impulse, this.body.getAbsolutePosition());
   }
 
+  /** Destroyed: char in place + a small tumbling impulse; gravity brings the wreck down once
+   *  `fixedUpdate` stops being driven (Combatant no longer moves a dead unit). */
   kill(): void {
-    this.visual.setEnabled(false);
+    charAllMaterials(this.visual);
+    const body = this.agg.body;
+    const c = this.body.getAbsolutePosition();
+    body.applyImpulse(
+      new Vector3((Math.random() - 0.5) * 4, 1, (Math.random() - 0.5) * 4),
+      new Vector3(c.x + (Math.random() - 0.5) * 1.2, c.y + (Math.random() - 0.5) * 0.3, c.z + (Math.random() - 0.5) * 1.2),
+    );
   }
 
   fixedUpdate(dt: number, input: InputState, _fwd: Vector3, _right: Vector3): void {

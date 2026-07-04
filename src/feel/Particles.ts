@@ -34,7 +34,8 @@ interface Anim {
 
 const FLASH_POOL = 6;
 const RING_POOL = 6;
-const SCORCH_POOL = 8;
+const SCORCH_POOL = 10;
+const SCORCH_LIFE_S = 12; // scorch decals linger roughly as long as a wreck (>=10s, C3b AC2)
 
 /**
  * Pooled FX: sparks, billowing smoke, light flashes, plus a fireball core, an expanding
@@ -43,12 +44,14 @@ const SCORCH_POOL = 8;
 export class Particles {
   private readonly sparks: ParticleSystem;
   private readonly smoke: ParticleSystem;
+  private readonly smokeColumn: ParticleSystem;
   private readonly fireball: ParticleSystem;
   private readonly dust: ParticleSystem;
   private readonly spray: ParticleSystem;
   private readonly debris: ParticleSystem;
   private readonly sparkPos = new Vector3();
   private readonly smokePos = new Vector3();
+  private readonly smokeColumnPos = new Vector3();
   private readonly firePos = new Vector3();
   private readonly dustPos = new Vector3();
   private readonly sprayPos = new Vector3();
@@ -84,19 +87,20 @@ export class Particles {
     this.sparks.emitRate = 0;
     this.sparks.start();
 
-    // --- Fireball core (bright, additive, very short) ---
+    // --- Fireball core (bright, additive, very short, grows fast — readable from distance) ---
     this.fireball = new ParticleSystem("fireball", 400, scene);
     this.fireball.particleTexture = soft;
     this.fireball.emitter = this.firePos;
-    this.fireball.createSphereEmitter(0.2);
+    this.fireball.createSphereEmitter(0.35);
     this.fireball.blendMode = ParticleSystem.BLENDMODE_ADD;
     this.fireball.color1 = new Color4(1, 0.95, 0.6, 1);
     this.fireball.color2 = new Color4(1, 0.5, 0.15, 1);
     this.fireball.colorDead = new Color4(0.2, 0.05, 0, 0);
-    this.fireball.minSize = 0.5;
-    this.fireball.maxSize = 1.7;
-    this.fireball.minLifeTime = 0.12;
-    this.fireball.maxLifeTime = 0.34;
+    this.fireball.addSizeGradient(0, 0.8);
+    this.fireball.addSizeGradient(0.4, 2.6);
+    this.fireball.addSizeGradient(1, 3.4);
+    this.fireball.minLifeTime = 0.18;
+    this.fireball.maxLifeTime = 0.4;
     this.fireball.minEmitPower = 1;
     this.fireball.maxEmitPower = 4;
     this.fireball.emitRate = 0;
@@ -122,6 +126,31 @@ export class Particles {
     this.smoke.addSizeGradient(1, 2.8);
     this.smoke.emitRate = 0;
     this.smoke.start();
+
+    // --- Wreck smoke column (sustained, tall, dark — stage-2 of a kill explosion). Fed a few
+    // particles per frame per active wreck by `Wrecks.update`; each particle lives long enough
+    // and rises fast enough on its own to read as an >=8m column, no per-kill system needed. ---
+    this.smokeColumn = new ParticleSystem("smokeColumn", 500, scene);
+    this.smokeColumn.particleTexture = soft;
+    this.smokeColumn.emitter = this.smokeColumnPos;
+    this.smokeColumn.createSphereEmitter(0.5);
+    this.smokeColumn.blendMode = ParticleSystem.BLENDMODE_STANDARD;
+    this.smokeColumn.minLifeTime = 3.5;
+    this.smokeColumn.maxLifeTime = 6.5;
+    this.smokeColumn.minEmitPower = 1.6;
+    this.smokeColumn.maxEmitPower = 2.6;
+    this.smokeColumn.direction1 = new Vector3(-0.15, 1, -0.15);
+    this.smokeColumn.direction2 = new Vector3(0.15, 1, 0.15);
+    this.smokeColumn.gravity = new Vector3(0, -0.15, 0); // rises fast then decelerates, like heat
+    this.smokeColumn.addColorGradient(0, new Color4(0.03, 0.03, 0.03, 0));
+    this.smokeColumn.addColorGradient(0.12, new Color4(0.05, 0.05, 0.05, 0.55));
+    this.smokeColumn.addColorGradient(0.55, new Color4(0.2, 0.2, 0.21, 0.4));
+    this.smokeColumn.addColorGradient(1, new Color4(0.4, 0.4, 0.42, 0));
+    this.smokeColumn.addSizeGradient(0, 0.7);
+    this.smokeColumn.addSizeGradient(0.5, 2.6);
+    this.smokeColumn.addSizeGradient(1, 4.2);
+    this.smokeColumn.emitRate = 0;
+    this.smokeColumn.start();
 
     // --- Ground dust (tan, kicked up by wheels/tracks + heli downwash) ---
     this.dust = new ParticleSystem("dust", 700, scene);
@@ -218,7 +247,7 @@ export class Particles {
       mesh.material = scorchMat;
       mesh.isVisible = false;
       mesh.isPickable = false;
-      this.scorches.push({ mesh, life: 0, total: 6, max: 1 });
+      this.scorches.push({ mesh, life: 0, total: SCORCH_LIFE_S, max: 1 });
     }
   }
 
@@ -309,6 +338,14 @@ export class Particles {
     if (intensity <= 0) return;
     this.smokePos.copyFrom(pos);
     this.smoke.manualEmitCount = intensity > 0.66 ? 3 : 1;
+  }
+
+  /** Sustained rising smoke column fed a few particles/frame from a wreck (stage 2 of a kill
+   *  explosion) — reuses the pooled `smokeColumn` system, no per-call allocation. */
+  wreckSmoke(pos: Vector3, count: number): void {
+    if (count <= 0) return;
+    this.smokeColumnPos.copyFrom(pos);
+    this.smokeColumn.manualEmitCount = count;
   }
 
   update(dtMs: number): void {

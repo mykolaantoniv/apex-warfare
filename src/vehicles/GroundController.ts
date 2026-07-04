@@ -13,7 +13,7 @@ import type { InputState, VehicleConfig } from "../core/types";
 import type { WaterRegion } from "../data/types";
 import { clamp } from "../core/math";
 import type { VehicleController } from "./VehicleController";
-import { attachGlb, buildBikeModel, buildBoatModel, buildSoldierModel, GroundModel } from "./models";
+import { attachGlb, buildBikeModel, buildBoatModel, buildSoldierModel, charAllMaterials, GroundModel } from "./models";
 
 const GRAVITY = 9.81;
 const DEG2RAD = Math.PI / 180;
@@ -116,8 +116,18 @@ export class GroundController implements VehicleController {
     this.agg.body.applyImpulse(impulse, this.body.getAbsolutePosition());
   }
 
+  /** Destroyed: char in place + a small off-center impulse (topples/shudders). Boats stop
+   *  taking on gravity so a sunk hull rests visibly at the waterline instead of sinking through
+   *  the (non-solid) water plane and disappearing below the terrain collider. */
   kill(): void {
-    this.visual.setEnabled(false);
+    charAllMaterials(this.visual);
+    const body = this.agg.body;
+    if (this.water) body.setGravityFactor(0);
+    const c = this.body.getAbsolutePosition();
+    body.applyImpulse(
+      new Vector3((Math.random() - 0.5) * 3, 1, (Math.random() - 0.5) * 3),
+      new Vector3(c.x + (Math.random() - 0.5) * 1.0, c.y + (Math.random() - 0.5) * 0.2, c.z + (Math.random() - 0.5) * 1.0),
+    );
   }
 
   fixedUpdate(dt: number, input: InputState, _fwd: Vector3, _right: Vector3): void {

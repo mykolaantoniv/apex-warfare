@@ -81,10 +81,13 @@ export class Combatant implements Target {
 
   private die(): void {
     this.alive = false;
-    if (this.finisher) this.feel.finisher(this.controller.position);
-    else this.feel.explode(this.controller.position, 1.2);
-    if (this.team === "enemy") this.controller.dispose();
-    else this.controller.kill();
+    const pos = this.controller.position.clone();
+    if (this.finisher) this.feel.finisher(pos);
+    else this.feel.killImpact(pos); // beefier-than-a-hit kill moment on every death (C3b)
+    // Hand the controller off instead of disposing it: it becomes a pooled, charred wreck
+    // (collapses/settles under physics, smokes for a while) and is torn down later by the
+    // FeelDirector's Wrecks pool once the concurrent-wreck cap is exceeded.
+    this.feel.wrecks.spawn(this.controller, pos);
   }
 
   update(dt: number, input: InputState, fwd: Vector3, right: Vector3): void {
