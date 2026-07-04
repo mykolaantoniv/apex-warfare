@@ -1,0 +1,10 @@
+{
+  "id": "m-frost-2",
+  "mapId": "map-frost",
+  "name": "Whiteout",
+  "type": "deathmatch",
+  "killTarget": 11,
+  "enemyRoster": ["tank-boulder", "tank-raider", "heli-pest", "bike-scout"],
+  "finale": false,
+  "unlock": { "type": "stars", "required": 10 }
+}

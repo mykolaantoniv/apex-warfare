@@ -1,0 +1,10 @@
+{
+  "id": "m-foundry-2",
+  "mapId": "map-foundry",
+  "name": "Blast Furnace",
+  "type": "deathmatch",
+  "killTarget": 13,
+  "enemyRoster": ["tank-boulder", "jet-talon", "tank-raider", "soldier-grunt"],
+  "finale": true,
+  "unlock": { "type": "stars", "required": 24 }
+}

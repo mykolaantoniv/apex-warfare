@@ -1,0 +1,10 @@
+{
+  "id": "m-foundry-1",
+  "mapId": "map-foundry",
+  "name": "Scrap Yard",
+  "type": "deathmatch",
+  "killTarget": 10,
+  "enemyRoster": ["tank-raider", "soldier-grunt", "bike-scout", "heli-wasp"],
+  "finale": false,
+  "unlock": { "type": "stars", "required": 18 }
+}

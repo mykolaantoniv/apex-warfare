@@ -13,6 +13,109 @@ import {
   PhysicsShapeType,
 } from "@babylonjs/core";
 import type { MapConfig, RGB } from "../data/types";
+import { PROPS, PropKey, Placement, scatterProp, propColliders } from "./Props";
+
+/** A weighted prop choice for seeded scatter. */
+interface WeightedProp {
+  readonly key: PropKey;
+  readonly weight: number;
+}
+
+/**
+ * A biome = the art direction for a map `theme`: which CC0 trees line the field, which props
+ * clutter it, the cover piece, and how the ground/mountains/foliage are tinted. New biome = new
+ * entry here + a map JSON with that `theme` (data-driven, per CLAUDE.md).
+ */
+interface Biome {
+  readonly trees: readonly WeightedProp[];
+  readonly treeLine: number;
+  readonly treeInside: number;
+  readonly scatter: readonly WeightedProp[];
+  readonly scatterCount: number;
+  /** Landmark props sprinkled a few times (cabins, big boulders). */
+  readonly landmarks: readonly WeightedProp[];
+  readonly landmarkCount: number;
+  readonly cover: PropKey;
+  /** Ground look. `texture` uses the sandy PBR set tinted by `groundTint`; `flat` is a plain
+   * bright material with only the normal map (for snow). */
+  readonly ground: "texture" | "flat";
+  readonly groundTint: Color3;
+  readonly mountainTint: Color3;
+}
+
+const BIOMES: Record<string, Biome> = {
+  warzone: {
+    trees: [{ key: "tree", weight: 1 }],
+    treeLine: 56,
+    treeInside: 22,
+    scatter: [
+      { key: "rock", weight: 3 },
+      { key: "container", weight: 2 },
+      { key: "barrel", weight: 1 },
+    ],
+    scatterCount: 20,
+    landmarks: [{ key: "rockLarge", weight: 1 }],
+    landmarkCount: 4,
+    cover: "barrierLow",
+    ground: "texture",
+    groundTint: new Color3(1, 1, 1),
+    mountainTint: new Color3(0.32, 0.29, 0.26),
+  },
+  snow: {
+    trees: [{ key: "pineSnow", weight: 1 }],
+    treeLine: 62,
+    treeInside: 26,
+    scatter: [
+      { key: "rock", weight: 2 },
+      { key: "barrel", weight: 1 },
+      { key: "container", weight: 1 },
+    ],
+    scatterCount: 16,
+    landmarks: [
+      { key: "cabin", weight: 2 },
+      { key: "rockLarge", weight: 1 },
+    ],
+    landmarkCount: 6,
+    cover: "barrierLow",
+    ground: "flat",
+    groundTint: new Color3(0.92, 0.95, 1.0),
+    mountainTint: new Color3(0.8, 0.83, 0.9),
+  },
+  industrial: {
+    trees: [
+      { key: "treeDead", weight: 2 },
+      { key: "treeAutumn", weight: 1 },
+    ],
+    treeLine: 40,
+    treeInside: 12,
+    scatter: [
+      { key: "container", weight: 3 },
+      { key: "pipe", weight: 2 },
+      { key: "crate", weight: 2 },
+      { key: "barrel", weight: 2 },
+    ],
+    scatterCount: 26,
+    landmarks: [{ key: "container", weight: 1 }],
+    landmarkCount: 4,
+    cover: "barrierLow",
+    ground: "texture",
+    groundTint: new Color3(0.62, 0.62, 0.64),
+    mountainTint: new Color3(0.34, 0.31, 0.29),
+  },
+};
+
+const biomeFor = (theme: string): Biome => BIOMES[theme] ?? BIOMES.warzone!;
+
+/** Weighted pick from a seeded RNG. */
+function pickWeighted(items: readonly WeightedProp[], r: number): PropKey {
+  const total = items.reduce((a, b) => a + b.weight, 0);
+  let t = r * total;
+  for (const it of items) {
+    t -= it.weight;
+    if (t <= 0) return it.key;
+  }
+  return items[items.length - 1]!.key;
+}
 
 /** Built arena: physics-backed geometry + gameplay bounds and spawn points. */
 export interface Arena {
@@ -55,83 +158,43 @@ function pbr(scene: Scene, name: string, o: PBROpts): PBRMaterial {
   return mat;
 }
 
-/** Procedural warzone structures — buildings, containers, watchtowers, rocks — that fill
- * the map and block line of sight (CC0-by-construction). */
-function buildWarzone(scene: Scene, map: MapConfig, shadows: ShadowGenerator): void {
+/**
+ * Mid-field clutter: real CC0 GLB props (rocks / containers / pipes / barrels / crates + biome
+ * landmarks like cabins) scattered by a seeded RNG so the layout is deterministic per map but
+ * varies between maps. Each prop type renders as ONE thin-instanced draw call; invisible physics
+ * colliders are added synchronously so vehicles collide immediately. Replaces the old procedural
+ * box buildings/containers.
+ */
+function dressProps(scene: Scene, map: MapConfig, shadows: ShadowGenerator, biome: Biome): void {
   const H = map.half;
-  const f = H / 90; // scale placements with map size
-
-  const concrete = new PBRMaterial("wzConcrete", scene);
-  concrete.albedoColor = new Color3(0.52, 0.5, 0.46);
-  concrete.roughness = 0.9;
-  const concreteDark = new PBRMaterial("wzConcreteD", scene);
-  concreteDark.albedoColor = new Color3(0.34, 0.33, 0.3);
-  concreteDark.roughness = 0.92;
-  const rockMat = new PBRMaterial("wzRock", scene);
-  rockMat.albedoColor = new Color3(0.3, 0.27, 0.24);
-  rockMat.roughness = 0.95;
-  const mkContainer = (name: string, tint: Color3): PBRMaterial =>
-    pbr(scene, name, { dir: "metal", base: "Metal032_1K-JPG", metallic: 0.5, roughness: 0.62, uScale: 2, tint });
-  const containerMats = [
-    mkContainer("wzC1", new Color3(0.7, 0.18, 0.12)),
-    mkContainer("wzC2", new Color3(0.16, 0.34, 0.55)),
-    mkContainer("wzC3", new Color3(0.3, 0.42, 0.2)),
-  ];
-
-  const solid = (m: Mesh, mat: PBRMaterial): void => {
-    m.material = mat;
-    m.receiveShadows = true;
-    shadows.addShadowCaster(m);
-    m.freezeWorldMatrix();
-    new PhysicsAggregate(m, PhysicsShapeType.BOX, { mass: 0, restitution: 0.1 }, scene);
-  };
-  const building = (x: number, z: number, w: number, h: number, d: number, rot: number, mat: PBRMaterial): void => {
-    const b = MeshBuilder.CreateBox("wzBuilding", { width: w, height: h, depth: d }, scene);
-    b.position.set(x, h / 2, z);
-    b.rotation.y = rot;
-    solid(b, mat);
-  };
-  const container = (x: number, y: number, z: number, rot: number, mat: PBRMaterial): void => {
-    const c = MeshBuilder.CreateBox("wzContainer", { width: 6, height: 2.6, depth: 2.5 }, scene);
-    c.position.set(x, y, z);
-    c.rotation.y = rot;
-    solid(c, mat);
-  };
-
-  // Buildings + watchtowers.
-  building(-35 * f, 6 * f, 16, 13, 20, 0.15, concrete);
-  building(-52 * f, -8 * f, 12, 8, 14, -0.25, concreteDark);
-  building(-40 * f, 24 * f, 10, 7, 12, 0.4, concrete);
-  building(55 * f, 46 * f, 16, 11, 14, 0.5, concrete);
-  building(-58 * f, 50 * f, 14, 9, 18, -0.4, concreteDark);
-  building(36 * f, 62 * f, 18, 15, 12, 0, concrete);
-  building(20 * f, 20 * f, 9, 6, 9, 0.6, concreteDark);
-  building(48 * f, 2 * f, 5, 22, 5, 0, concrete);
-  building(-14 * f, 72 * f, 4, 18, 4, 0, concreteDark);
-
-  // Container stacks.
-  container(-22 * f, 1.3, 4 * f, 0.4, containerMats[0]!);
-  container(-22 * f, 3.9, 4 * f, 0.4, containerMats[1]!);
-  container(-16 * f, 1.3, 0, 0.1, containerMats[2]!);
-  container(50 * f, 1.3, 40 * f, 1.2, containerMats[1]!);
-  container(50 * f, 3.9, 40 * f, 1.2, containerMats[0]!);
-
-  // Seeded scatter of rocks + lone containers (seed per map so layouts differ).
   const rand = seededRng(1337 + Math.round(H));
   const [px, pz] = map.spawns.player;
-  for (let i = 0; i < 16; i++) {
+  const clear = (x: number, z: number): boolean => Math.hypot(x - px, z - pz) > 20;
+
+  // Bucket placements per prop key so each becomes a single thin-instanced mesh.
+  const buckets = new Map<PropKey, Placement[]>();
+  const add = (key: PropKey, p: Placement): void => {
+    let b = buckets.get(key);
+    if (!b) buckets.set(key, (b = []));
+    b.push(p);
+  };
+
+  for (let i = 0; i < biome.scatterCount; i++) {
     const x = (rand() * 2 - 1) * (H - 12);
     const z = (rand() * 2 - 1) * (H - 12);
-    if (Math.hypot(x - px, z - pz) < 20) continue; // keep the player spawn clear
-    if (rand() < 0.55) {
-      const s = 2 + rand() * 4;
-      const rock = MeshBuilder.CreateBox("wzRock", { width: s, height: s * 0.8, depth: s * 1.1 }, scene);
-      rock.position.set(x, s * 0.4, z);
-      rock.rotation.set(rand() * 0.3, rand() * Math.PI, rand() * 0.3);
-      solid(rock, rockMat);
-    } else {
-      container(x, 1.3, z, rand() * Math.PI, containerMats[Math.floor(rand() * 3)]!);
-    }
+    if (!clear(x, z)) continue;
+    add(pickWeighted(biome.scatter, rand()), { x, z, s: 0.8 + rand() * 0.6, yaw: rand() * Math.PI * 2 });
+  }
+  for (let i = 0; i < biome.landmarkCount; i++) {
+    const x = (rand() * 2 - 1) * (H - 18);
+    const z = (rand() * 2 - 1) * (H - 18);
+    if (!clear(x, z)) continue;
+    add(pickWeighted(biome.landmarks, rand()), { x, z, s: 0.9 + rand() * 0.4, yaw: rand() * Math.PI * 2 });
+  }
+
+  for (const [key, places] of buckets) {
+    scatterProp(scene, PROPS[key], places, shadows);
+    propColliders(scene, PROPS[key], places);
   }
 }
 
@@ -144,36 +207,6 @@ function seededRng(seed: number): () => number {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-/**
- * One low-poly tree = trunk + 2–3 stacked foliage cones. The meshes are pushed into
- * per-material buckets (bark / leaf) so the whole forest can be merged into a couple of
- * static meshes afterwards — keeping draw calls low on mobile.
- */
-function makeTree(
-  scene: Scene,
-  x: number,
-  z: number,
-  s: number,
-  rot: number,
-  barkBucket: Mesh[],
-  leafBucket: Mesh[],
-): void {
-  const trunk = MeshBuilder.CreateCylinder("tree", { height: 2.4 * s, diameterTop: 0.35 * s, diameterBottom: 0.55 * s, tessellation: 6 }, scene);
-  trunk.position.set(x, 1.2 * s, z);
-  barkBucket.push(trunk);
-  const tiers = 2 + (Math.floor(rot) % 2);
-  for (let i = 0; i < tiers; i++) {
-    const cone = MeshBuilder.CreateCylinder(
-      "leaf",
-      { height: 2.6 * s, diameterTop: 0, diameterBottom: (3.4 - i * 0.7) * s, tessellation: 7 },
-      scene,
-    );
-    cone.position.set(x, (2.6 + i * 1.5) * s, z);
-    cone.rotation.y = rot;
-    leafBucket.push(cone);
-  }
 }
 
 /** Merge same-material meshes into one static, frozen, non-pickable draw call. */
@@ -196,7 +229,7 @@ function mergeStatic(name: string, meshes: Mesh[], mat: PBRMaterial): Mesh | nul
  * trees are MERGED per-material into a few static meshes so the whole horizon is only a
  * handful of draw calls; in-play trees get their own slim invisible colliders.
  */
-function buildOpenTerrain(scene: Scene, map: MapConfig, _shadows: ShadowGenerator): void {
+function buildOpenTerrain(scene: Scene, map: MapConfig, shadows: ShadowGenerator, biome: Biome): void {
   const H = map.half;
   const rng = seededRng(90210 + H);
 
@@ -211,11 +244,11 @@ function buildOpenTerrain(scene: Scene, map: MapConfig, _shadows: ShadowGenerato
   skirt.freezeWorldMatrix();
 
   const rockMat = new PBRMaterial("mtnRock", scene);
-  rockMat.albedoColor = new Color3(0.32, 0.29, 0.26);
+  rockMat.albedoColor = biome.mountainTint.clone();
   rockMat.roughness = 1;
   rockMat.metallic = 0;
   const rockDark = new PBRMaterial("mtnRockD", scene);
-  rockDark.albedoColor = new Color3(0.24, 0.22, 0.2);
+  rockDark.albedoColor = biome.mountainTint.scale(0.72);
   rockDark.roughness = 1;
 
   // Mountain ring — low-poly cones at ~1.5×half, varied so the horizon feels natural.
@@ -241,54 +274,38 @@ function buildOpenTerrain(scene: Scene, map: MapConfig, _shadows: ShadowGenerato
   mergeStatic("mountains", rocks, rockMat);
   mergeStatic("mountainsDark", rocksDark, rockDark);
 
-  // Trees (materials shared across the whole forest so we can merge by bucket).
-  const bark = new PBRMaterial("bark", scene);
-  bark.albedoColor = new Color3(0.28, 0.2, 0.13);
-  bark.roughness = 0.95;
-  const leaf = new PBRMaterial("leaf", scene);
-  leaf.albedoColor = new Color3(0.16, 0.32, 0.14);
-  leaf.roughness = 0.85;
-  const leafDry = new PBRMaterial("leafDry", scene);
-  leafDry.albedoColor = new Color3(0.3, 0.34, 0.16);
-  leafDry.roughness = 0.85;
-
-  const barkBucket: Mesh[] = [];
-  const leafBucket: Mesh[] = [];
-  const leafDryBucket: Mesh[] = [];
-
+  // Trees — real CC0 GLB species per biome, each thin-instanced into a single draw call.
   const [px, pz] = map.spawns.player;
   const clearOfSpawn = (x: number, z: number): boolean => Math.hypot(x - px, z - pz) > 16;
+  const treeBuckets = new Map<PropKey, Placement[]>();
+  const addTree = (x: number, z: number, s: number): void => {
+    const key = pickWeighted(biome.trees, rng());
+    let b = treeBuckets.get(key);
+    if (!b) treeBuckets.set(key, (b = []));
+    b.push({ x, z, s, yaw: rng() * Math.PI * 2 });
+  };
 
-  // Tree line hugging the border (just inside the invisible walls).
-  const lineCount = 64;
-  for (let i = 0; i < lineCount; i++) {
-    const a = (i / lineCount) * Math.PI * 2;
-    const r = H * (0.9 + rng() * 0.12);
-    const x = Math.cos(a) * r;
-    const z = Math.sin(a) * r;
-    makeTree(scene, x, z, 1.1 + rng() * 0.9, rng() * Math.PI * 2, barkBucket, rng() < 0.5 ? leafBucket : leafDryBucket);
+  // Dense tree line hugging the border (just inside the invisible walls), for a forest horizon.
+  for (let i = 0; i < biome.treeLine; i++) {
+    const a = (i / biome.treeLine) * Math.PI * 2;
+    const r = H * (0.9 + rng() * 0.13);
+    addTree(Math.cos(a) * r, Math.sin(a) * r, 0.9 + rng() * 0.6);
   }
 
   // Sparse trees inside the play area for cover + depth, each with a slim invisible collider.
-  const colliderMat = new PBRMaterial("treeCol", scene);
-  for (let i = 0; i < 30; i++) {
+  const treeColliderPlaces: Placement[] = [];
+  for (let i = 0; i < biome.treeInside; i++) {
     const x = (rng() * 2 - 1) * (H - 14);
     const z = (rng() * 2 - 1) * (H - 14);
     if (!clearOfSpawn(x, z)) continue;
-    const s = 0.85 + rng() * 0.7;
-    makeTree(scene, x, z, s, rng() * Math.PI * 2, barkBucket, rng() < 0.6 ? leafBucket : leafDryBucket);
-    // Physics-only collider (not rendered) so vehicles hit the trunk.
-    const col = MeshBuilder.CreateCylinder("treeCol", { height: 2.4 * s, diameter: 0.7 * s, tessellation: 6 }, scene);
-    col.position.set(x, 1.2 * s, z);
-    col.isVisible = false;
-    col.material = colliderMat;
-    new PhysicsAggregate(col, PhysicsShapeType.CYLINDER, { mass: 0, restitution: 0.15 }, scene);
+    const s = 0.85 + rng() * 0.6;
+    addTree(x, z, s);
+    treeColliderPlaces.push({ x, z, s });
   }
 
-  // Collapse the whole forest into 3 static draw calls.
-  mergeStatic("treeBark", barkBucket, bark);
-  mergeStatic("treeLeaf", leafBucket, leaf);
-  mergeStatic("treeLeafDry", leafDryBucket, leafDry);
+  for (const [key, places] of treeBuckets) scatterProp(scene, PROPS[key], places, shadows);
+  // One collider def represents any trunk (thin) — reuse the tree radius.
+  propColliders(scene, { url: "", scale: 1, floorY: 0, colliderR: 0.4 }, treeColliderPlaces);
 }
 
 /**
@@ -340,6 +357,7 @@ function makeWaterNormal(scene: Scene, size = 256): RawTexture {
 /** Build a map from its config: IBL env, floor, walls, cover, drains, fog, spawns. */
 export function buildArena(scene: Scene, shadows: ShadowGenerator, map: MapConfig): Arena {
   const HALF = map.half;
+  const biome = biomeFor(map.theme);
   scene.clearColor.set(map.palette.clear[0], map.palette.clear[1], map.palette.clear[2], 1);
 
   // Outdoor sky HDRI → skybox + IBL (realistic daylight + reflections).
@@ -355,14 +373,27 @@ export function buildArena(scene: Scene, shadows: ShadowGenerator, map: MapConfi
   // Floor — realistic sandy-gravel ground.
   const floor = MeshBuilder.CreateBox("floor", { width: HALF * 2, height: 1, depth: HALF * 2 }, scene);
   floor.position.y = -0.5;
-  floor.material = pbr(scene, "floorMat", {
-    dir: "ground",
-    base: "ground",
-    metallic: 0.0,
-    roughness: 0.92,
-    uScale: HALF / 4,
-    tint: new Color3(1, 1, 1),
-  });
+  if (biome.ground === "flat") {
+    // Snow: bright near-white material, only the sandy normal for micro relief (no albedo texture).
+    const snow = new PBRMaterial("floorMat", scene);
+    const nrm = new Texture("textures/ground/ground_NormalGL.jpg", scene);
+    nrm.uScale = nrm.vScale = HALF / 4;
+    snow.bumpTexture = nrm;
+    snow.bumpTexture.level = 0.35;
+    snow.albedoColor = biome.groundTint;
+    snow.metallic = 0;
+    snow.roughness = 0.72;
+    floor.material = snow;
+  } else {
+    floor.material = pbr(scene, "floorMat", {
+      dir: "ground",
+      base: "ground",
+      metallic: 0.0,
+      roughness: 0.92,
+      uScale: HALF / 4,
+      tint: biome.groundTint,
+    });
+  }
   floor.receiveShadows = true;
   floor.freezeWorldMatrix();
   new PhysicsAggregate(floor, PhysicsShapeType.BOX, { mass: 0, restitution: 0.1, friction: 0.9 }, scene);
@@ -382,27 +413,13 @@ export function buildArena(scene: Scene, shadows: ShadowGenerator, map: MapConfi
   makeWall(1, HALF * 2, HALF, 0);
   makeWall(1, HALF * 2, -HALF, 0);
 
-  buildOpenTerrain(scene, map, shadows);
+  buildOpenTerrain(scene, map, shadows, biome);
 
-  // Cover — painted metal blocks (accent tint).
-  const coverMat = pbr(scene, "coverMat", {
-    dir: "metal",
-    base: "Metal032_1K-JPG",
-    metallic: 0.85,
-    roughness: 0.4,
-    uScale: 1,
-    tint: col(map.palette.accent),
-  });
-  for (const [x, z, yaw] of map.cover) {
-    const box = MeshBuilder.CreateBox("cover", { width: 2.4, height: 1.1, depth: 1.3 }, scene);
-    box.position.set(x, 0.55, z);
-    box.rotation.y = yaw * (Math.PI / 180);
-    box.material = coverMat;
-    box.receiveShadows = true;
-    shadows.addShadowCaster(box);
-    box.freezeWorldMatrix();
-    new PhysicsAggregate(box, PhysicsShapeType.BOX, { mass: 0, restitution: 0.25 }, scene);
-  }
+  // Cover — real CC0 GLB barriers at the map's authored cover points (thin-instanced).
+  const coverDef = PROPS[biome.cover];
+  const coverPlaces: Placement[] = map.cover.map(([x, z, yaw]) => ({ x, z, yaw: yaw * (Math.PI / 180) }));
+  scatterProp(scene, coverDef, coverPlaces, shadows);
+  propColliders(scene, coverDef, coverPlaces);
 
   // Drains.
   const drainMat = new PBRMaterial("drainMat", scene);
@@ -454,7 +471,7 @@ export function buildArena(scene: Scene, shadows: ShadowGenerator, map: MapConfi
     scene.metadata = { ...(scene.metadata as object | null), water: w };
   }
 
-  buildWarzone(scene, map, shadows);
+  dressProps(scene, map, shadows, biome);
 
   return {
     bounds: {

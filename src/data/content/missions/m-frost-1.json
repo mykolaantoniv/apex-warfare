@@ -1,0 +1,10 @@
+{
+  "id": "m-frost-1",
+  "mapId": "map-frost",
+  "name": "Cold Open",
+  "type": "deathmatch",
+  "killTarget": 8,
+  "enemyRoster": ["tank-raider", "bike-scout", "heli-wasp", "soldier-grunt"],
+  "finale": false,
+  "unlock": { "type": "stars", "required": 6 }
+}

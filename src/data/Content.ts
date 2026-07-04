@@ -29,6 +29,8 @@ import wRaider from "./content/weapons/weapon-raider-cannon.json";
 import mapShower from "./content/maps/map-shower.json";
 import mapSink from "./content/maps/map-sink.json";
 import mapLocker from "./content/maps/map-locker.json";
+import mapFrost from "./content/maps/map-frost.json";
+import mapFoundry from "./content/maps/map-foundry.json";
 
 import mShower1 from "./content/missions/m-shower-1.json";
 import mShower2 from "./content/missions/m-shower-2.json";
@@ -39,6 +41,10 @@ import mSink3 from "./content/missions/m-sink-3.json";
 import mLocker1 from "./content/missions/m-locker-1.json";
 import mLocker2 from "./content/missions/m-locker-2.json";
 import mLocker3 from "./content/missions/m-locker-3.json";
+import mFrost1 from "./content/missions/m-frost-1.json";
+import mFrost2 from "./content/missions/m-frost-2.json";
+import mFoundry1 from "./content/missions/m-foundry-1.json";
+import mFoundry2 from "./content/missions/m-foundry-2.json";
 
 import tHornet from "./content/trees/tree-hornet.json";
 import tMule from "./content/trees/tree-mule.json";
@@ -77,7 +83,7 @@ const weapons = [
   wGunboat,
   wRaider,
 ] as unknown as WeaponConfig[];
-const maps = [mapShower, mapSink, mapLocker] as unknown as MapConfig[];
+const maps = [mapShower, mapSink, mapLocker, mapFrost, mapFoundry] as unknown as MapConfig[];
 const missions = [
   mShower1,
   mShower2,
@@ -88,6 +94,10 @@ const missions = [
   mLocker1,
   mLocker2,
   mLocker3,
+  mFrost1,
+  mFrost2,
+  mFoundry1,
+  mFoundry2,
 ] as unknown as MissionConfig[];
 const trees = [tHornet, tMule, tTalon, tBoulder] as unknown as UpgradeTree[];
 
@@ -106,7 +116,7 @@ function need<T>(map: Record<string, T>, id: string, kind: string): T {
 export const Content = {
   /** Player-selectable roster, in unlock order. */
   playerVehicleOrder: ["heli-hornet", "heli-mule", "jet-talon", "tank-boulder"] as const,
-  mapOrder: ["map-shower", "map-sink", "map-locker"] as const,
+  mapOrder: ["map-shower", "map-sink", "map-locker", "map-frost", "map-foundry"] as const,
   /** Canonical campaign order (drives campaign index + "previous"-type unlocks). */
   missionOrder: [
     "m-shower-1",
@@ -118,6 +128,10 @@ export const Content = {
     "m-locker-1",
     "m-locker-2",
     "m-locker-3",
+    "m-frost-1",
+    "m-frost-2",
+    "m-foundry-1",
+    "m-foundry-2",
   ] as const,
 
   vehicle: (id: string): VehicleConfig => need(vehicleMap, id, "vehicle"),
