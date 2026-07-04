@@ -20,3 +20,4 @@ acrlog.txt
 # local verification helper scripts (playwright smoke/screenshot)
 /.shot.mjs
 /.gsmoke.mjs
+.setshot.mjs

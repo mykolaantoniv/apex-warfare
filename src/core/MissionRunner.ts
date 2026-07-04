@@ -29,6 +29,7 @@ export interface LaunchConfig {
   ownedUpgrades: string[];
   tier: QualityTier;
   tutorial: boolean;
+  motionBlur: boolean;
 }
 
 /** Builds and runs a single mission scene; reports its result and tears itself down. */
@@ -71,7 +72,7 @@ export class MissionRunner {
     // Camera first: the cascaded shadow generator + SSAO both read the active camera.
     this.camera = new CameraRig(this.scene);
     const lighting = buildLighting(this.scene, this.cfg.tier, map.sunDir);
-    buildPostFX(this.scene, this.camera.camera, this.cfg.tier);
+    buildPostFX(this.scene, this.camera.camera, this.cfg.tier, this.cfg.motionBlur);
     const arena = buildArena(this.scene, lighting.shadows, map);
     this.water = (this.scene.metadata as { water?: WaterRegion } | null)?.water ?? null;
 

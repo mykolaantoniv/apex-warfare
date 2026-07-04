@@ -31,6 +31,7 @@ export interface NetConfig {
   vehicleId: string;
   name: string;
   tier: QualityTier;
+  motionBlur: boolean;
   /** When set, join this specific room (from the lobby browser) instead of matchmaking. */
   roomId?: string;
 }
@@ -132,7 +133,7 @@ export class NetGame {
 
     this.camera = new CameraRig(this.scene);
     const lighting = buildLighting(this.scene, this.cfg.tier, map.sunDir);
-    buildPostFX(this.scene, this.camera.camera, this.cfg.tier);
+    buildPostFX(this.scene, this.camera.camera, this.cfg.tier, this.cfg.motionBlur);
     const arena = buildArena(this.scene, lighting.shadows, map);
     this.scene.blockMaterialDirtyMechanism = true;
     this.world = worldFor(this.room.state.mapId);

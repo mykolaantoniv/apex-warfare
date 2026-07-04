@@ -13,7 +13,7 @@ export interface SaveData {
   missionStars: Record<string, number>; // best stars (0..3) per mission
   missionBestTime: Record<string, number>; // best time (s) per mission
   purchasedUpgrades: Record<string, string[]>; // node ids per tree
-  settings: { volume: number };
+  settings: { volume: number; motionBlur: boolean };
   tutorialDone: boolean; // first-mission coach marks already shown
 }
 
@@ -26,7 +26,7 @@ function defaults(): SaveData {
     missionStars: {},
     missionBestTime: {},
     purchasedUpgrades: {},
-    settings: { volume: 0.5 },
+    settings: { volume: 0.5, motionBlur: false },
     tutorialDone: false,
   };
 }

@@ -106,6 +106,7 @@ export class App {
         ownedUpgrades: treeId ? this.save.ownedUpgrades(treeId) : [],
         tier: this.tier,
         tutorial: !this.save.data.tutorialDone,
+        motionBlur: this.save.data.settings.motionBlur,
       },
       (r) => void this.finish(missionId, r),
     );
@@ -155,6 +156,7 @@ export class App {
         vehicleId: this.save.data.selectedVehicle,
         name: choice.name,
         tier: this.tier,
+        motionBlur: this.save.data.settings.motionBlur,
         ...(choice.roomId ? { roomId: choice.roomId } : {}),
       },
       (msg) => {

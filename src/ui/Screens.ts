@@ -287,6 +287,24 @@ export class Screens {
     volRow.appendChild(slider);
     wrap.appendChild(volRow);
 
+    // Motion blur — off by default; opt-in "sense of speed" camera blur (applies next mission).
+    const mbRow = el("div", "set-row");
+    mbRow.appendChild(el("span", "set-label", "MOTION BLUR"));
+    const mbBtn = el("button", "btn toggle");
+    const syncMb = (): void => {
+      const on = save.data.settings.motionBlur;
+      mbBtn.textContent = on ? "ON" : "OFF";
+      mbBtn.classList.toggle("on", on);
+    };
+    syncMb();
+    mbBtn.onclick = () => {
+      save.data.settings.motionBlur = !save.data.settings.motionBlur;
+      syncMb();
+      persist();
+    };
+    mbRow.appendChild(mbBtn);
+    wrap.appendChild(mbRow);
+
     const reset = el("button", "btn ghost", "RESET PROGRESS");
     reset.onclick = () => cb.reset();
     wrap.appendChild(reset);

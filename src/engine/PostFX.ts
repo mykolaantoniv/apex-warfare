@@ -4,6 +4,7 @@ import {
   DefaultRenderingPipeline,
   SSAO2RenderingPipeline,
   ImageProcessingConfiguration,
+  MotionBlurPostProcess,
 } from "@babylonjs/core";
 import type { QualityTier } from "../core/types";
 
@@ -13,7 +14,12 @@ import type { QualityTier } from "../core/types";
  * (sharpen, subtle grain + chromatic aberration on the top tiers) + camera motion blur. Heavier
  * effects are gated by tier, but per the realism overhaul the default tier is `ultra`.
  */
-export function buildPostFX(scene: Scene, camera: Camera, tier: QualityTier): DefaultRenderingPipeline {
+export function buildPostFX(
+  scene: Scene,
+  camera: Camera,
+  tier: QualityTier,
+  motionBlur = false,
+): DefaultRenderingPipeline {
   const heavy = tier === "high" || tier === "ultra";
   const ultra = tier === "ultra";
 
@@ -63,10 +69,15 @@ export function buildPostFX(scene: Scene, camera: Camera, tier: QualityTier): De
     pipeline.chromaticAberration.aberrationAmount = 2.2;
   }
 
-  // NOTE: camera motion blur was removed. It is camera-velocity based (no geometry prepass),
-  // and the fast third-person chase cam repositions so much per frame that *any* strength
-  // smeared the entire scene into a permanent radial haze. The crisp look wins.
-  void camera;
+  // Camera motion blur — OFF by default (Settings toggle). It is camera-velocity based (no
+  // geometry prepass), and the fast third-person chase cam repositions so much per frame that
+  // high strength smears the whole scene into a haze; kept subtle + opt-in for players who want
+  // the sense-of-speed look.
+  if (motionBlur && tier !== "low") {
+    const mb = new MotionBlurPostProcess("motionBlur", scene, 1.0, camera);
+    mb.motionStrength = 0.2;
+    mb.isObjectBased = false;
+  }
 
   return pipeline;
 }
