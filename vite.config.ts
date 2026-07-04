@@ -19,7 +19,7 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg"],
+      includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       workbox: {
         // Precache the app shell + the Havok wasm so the game runs fully offline.
         globPatterns: ["**/*.{js,css,html,svg,png,glb,ktx2,env,wasm,mp3,ogg}"],

@@ -1,10 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="12" fill="#0a0e14"/>
-  <g fill="none" stroke="#27e3ff" stroke-width="3" stroke-linecap="round">
-    <line x1="14" y1="22" x2="50" y2="22"/>
-    <rect x="24" y="26" width="16" height="12" rx="4" fill="#27e3ff" stroke="none"/>
-    <line x1="40" y1="32" x2="54" y2="32"/>
-    <line x1="52" y1="28" x2="52" y2="36"/>
-    <line x1="22" y1="38" x2="34" y2="38"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.42" r="0.75">
+      <stop offset="0" stop-color="#17202e"/>
+      <stop offset="0.6" stop-color="#0c111a"/>
+      <stop offset="1" stop-color="#070a10"/>
+    </radialGradient>
+    <linearGradient id="blade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5ff0ff"/>
+      <stop offset="1" stop-color="#1aa8d8"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3ad2ff"/>
+      <stop offset="1" stop-color="#1b8fc4"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <rect x="240" y="250" width="32" height="200" rx="14" fill="url(#body)"/>
+  <rect x="214" y="440" width="84" height="18" rx="9" fill="url(#blade)"/>
+  <rect x="150" y="250" width="212" height="30" rx="14" fill="#176a92"/>
+  <circle cx="150" cy="265" r="17" fill="#ff7a2f"/>
+  <circle cx="362" cy="265" r="17" fill="#ff7a2f"/>
+  <rect x="216" y="150" width="80" height="180" rx="38" fill="url(#body)"/>
+  <ellipse cx="256" cy="196" rx="26" ry="34" fill="#0c2531"/>
+  <rect x="248" y="120" width="16" height="46" rx="8" fill="#0c2531"/>
+  <rect x="82" y="247" width="348" height="20" rx="10" fill="url(#blade)" transform="rotate(28 256 256)"/>
+  <rect x="82" y="247" width="348" height="20" rx="10" fill="url(#blade)" transform="rotate(-28 256 256)"/>
+  <rect x="82" y="247" width="348" height="20" rx="10" fill="url(#blade)" transform="rotate(90 256 256)"/>
+  <rect x="82" y="247" width="348" height="20" rx="10" fill="url(#blade)"/>
+  <circle cx="256" cy="256" r="26" fill="#ff7a2f"/>
+  <circle cx="256" cy="256" r="11" fill="#0c2531"/>
 </svg>

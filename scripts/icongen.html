@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html,body{margin:0;padding:0;background:transparent}
+      #stage{width:512px;height:512px}
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <script>
+      // Query params: size (px), r (corner radius in 512-space), pad (motif inset fraction, for maskable safe zone).
+      const q = new URLSearchParams(location.search);
+      const size = +(q.get("size") || 512);
+      const r = q.get("r") == null ? 96 : +q.get("r"); // rounded for "any", 0 for square/maskable
+      const pad = +(q.get("pad") || 0); // extra safe-zone inset (0..0.2) for maskable
+
+      const V = 512, c = V / 2;
+      // Motif scale so it fits the safe zone.
+      const m = 1 - pad;
+
+      const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${V} ${V}" width="${size}" height="${size}">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.42" r="0.75">
+      <stop offset="0" stop-color="#17202e"/>
+      <stop offset="0.6" stop-color="#0c111a"/>
+      <stop offset="1" stop-color="#070a10"/>
+    </radialGradient>
+    <linearGradient id="blade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5ff0ff"/>
+      <stop offset="1" stop-color="#1aa8d8"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3ad2ff"/>
+      <stop offset="1" stop-color="#1b8fc4"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="${V}" height="${V}" rx="${r}" fill="url(#bg)"/>
+
+  <g transform="translate(${c} ${c}) scale(${m}) translate(${-c} ${-c})">
+    <!-- combat reticle backdrop -->
+    <g stroke="#2b6f86" stroke-width="4" fill="none" opacity="0.5">
+      <circle cx="${c}" cy="${c}" r="176"/>
+      <line x1="${c}" y1="44" x2="${c}" y2="80"/>
+      <line x1="${c}" y1="432" x2="${c}" y2="468"/>
+      <line x1="44" y1="${c}" x2="80" y2="${c}"/>
+      <line x1="432" y1="${c}" x2="468" y2="${c}"/>
+    </g>
+
+    <!-- top-down attack helicopter -->
+    <g filter="url(#sh)">
+      <!-- tail boom -->
+      <rect x="240" y="250" width="32" height="200" rx="14" fill="url(#body)"/>
+      <!-- tail rotor -->
+      <rect x="214" y="440" width="84" height="18" rx="9" fill="url(#blade)"/>
+      <!-- wing pylons (weapon stubs) -->
+      <rect x="150" y="250" width="212" height="30" rx="14" fill="#176a92"/>
+      <circle cx="150" cy="265" r="17" fill="#ff7a2f"/>
+      <circle cx="362" cy="265" r="17" fill="#ff7a2f"/>
+      <!-- fuselage -->
+      <rect x="216" y="150" width="80" height="180" rx="38" fill="url(#body)"/>
+      <!-- cockpit -->
+      <ellipse cx="256" cy="196" rx="26" ry="34" fill="#0c2531"/>
+      <!-- nose cannon -->
+      <rect x="248" y="120" width="16" height="46" rx="8" fill="#0c2531"/>
+
+      <!-- main rotor: 4 blades, bold X, orange hub -->
+      <g>
+        <rect x="82" y="247" width="348" height="20" rx="10" fill="url(#blade)" transform="rotate(28 256 256)"/>
+        <rect x="82" y="247" width="348" height="20" rx="10" fill="url(#blade)" transform="rotate(-28 256 256)"/>
+        <rect x="82" y="247" width="348" height="20" rx="10" fill="url(#blade)" transform="rotate(90 256 256)"/>
+        <rect x="82" y="247" width="348" height="20" rx="10" fill="url(#blade)"/>
+        <circle cx="256" cy="256" r="26" fill="#ff7a2f"/>
+        <circle cx="256" cy="256" r="11" fill="#0c2531"/>
+      </g>
+    </g>
+  </g>
+</svg>`;
+      document.getElementById("stage").innerHTML = svg;
+      document.getElementById("stage").style.width = size + "px";
+      document.getElementById("stage").style.height = size + "px";
+      window.__ready = true;
+    </script>
+  </body>
+</html>
