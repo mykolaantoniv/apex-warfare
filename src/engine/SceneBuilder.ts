@@ -36,9 +36,9 @@ interface Biome {
   readonly landmarks: readonly WeightedProp[];
   readonly landmarkCount: number;
   readonly cover: PropKey;
-  /** Ground look. `texture` uses the sandy PBR set tinted by `groundTint`; `flat` is a plain
-   * bright material with only the normal map (for snow). */
-  readonly ground: "texture" | "flat";
+  /** Ground PBR set: sand (default warzone), grass (forest), concrete (industrial), or snow
+   * (a bright flat material with only a normal map). All tinted by `groundTint`. */
+  readonly groundTex: "sand" | "grass" | "concrete" | "snow";
   readonly groundTint: Color3;
   readonly mountainTint: Color3;
 }
@@ -57,7 +57,7 @@ const BIOMES: Record<string, Biome> = {
     landmarks: [{ key: "rockLarge", weight: 1 }],
     landmarkCount: 4,
     cover: "barrierLow",
-    ground: "texture",
+    groundTex: "sand",
     groundTint: new Color3(1, 1, 1),
     mountainTint: new Color3(0.32, 0.29, 0.26),
   },
@@ -77,7 +77,7 @@ const BIOMES: Record<string, Biome> = {
     ],
     landmarkCount: 6,
     cover: "barrierLow",
-    ground: "flat",
+    groundTex: "snow",
     groundTint: new Color3(0.92, 0.95, 1.0),
     mountainTint: new Color3(0.8, 0.83, 0.9),
   },
@@ -98,9 +98,25 @@ const BIOMES: Record<string, Biome> = {
     landmarks: [{ key: "container", weight: 1 }],
     landmarkCount: 4,
     cover: "barrierLow",
-    ground: "texture",
-    groundTint: new Color3(0.62, 0.62, 0.64),
+    groundTex: "concrete",
+    groundTint: new Color3(0.72, 0.7, 0.68),
     mountainTint: new Color3(0.34, 0.31, 0.29),
+  },
+  forest: {
+    trees: [{ key: "tree", weight: 1 }],
+    treeLine: 70,
+    treeInside: 30,
+    scatter: [
+      { key: "rock", weight: 2 },
+      { key: "rockLarge", weight: 1 },
+    ],
+    scatterCount: 18,
+    landmarks: [{ key: "rockLarge", weight: 1 }],
+    landmarkCount: 4,
+    cover: "barrierLow",
+    groundTex: "grass",
+    groundTint: new Color3(0.85, 0.95, 0.7),
+    mountainTint: new Color3(0.3, 0.4, 0.28),
   },
 };
 
@@ -370,11 +386,11 @@ export function buildArena(scene: Scene, shadows: ShadowGenerator, map: MapConfi
   scene.fogDensity = map.fogDensity * 0.6;
   scene.fogColor = col(map.palette.fog);
 
-  // Floor — realistic sandy-gravel ground.
+  // Floor — per-biome PBR ground (grass forest / concrete industrial / snow / sandy warzone).
   const floor = MeshBuilder.CreateBox("floor", { width: HALF * 2, height: 1, depth: HALF * 2 }, scene);
   floor.position.y = -0.5;
-  if (biome.ground === "flat") {
-    // Snow: bright near-white material, only the sandy normal for micro relief (no albedo texture).
+  if (biome.groundTex === "snow") {
+    // Snow: bright near-white material, only a normal map for micro relief (no albedo texture).
     const snow = new PBRMaterial("floorMat", scene);
     const nrm = new Texture("textures/ground/ground_NormalGL.jpg", scene);
     nrm.uScale = nrm.vScale = HALF / 4;
@@ -385,12 +401,18 @@ export function buildArena(scene: Scene, shadows: ShadowGenerator, map: MapConfi
     snow.roughness = 0.72;
     floor.material = snow;
   } else {
+    const set =
+      biome.groundTex === "grass"
+        ? { dir: "grass", base: "grass", rough: 0.95, tile: HALF / 5 }
+        : biome.groundTex === "concrete"
+          ? { dir: "concrete", base: "concrete", rough: 0.85, tile: HALF / 6 }
+          : { dir: "ground", base: "ground", rough: 0.92, tile: HALF / 4 };
     floor.material = pbr(scene, "floorMat", {
-      dir: "ground",
-      base: "ground",
+      dir: set.dir,
+      base: set.base,
       metallic: 0.0,
-      roughness: 0.92,
-      uScale: HALF / 4,
+      roughness: set.rough,
+      uScale: set.tile,
       tint: biome.groundTint,
     });
   }
