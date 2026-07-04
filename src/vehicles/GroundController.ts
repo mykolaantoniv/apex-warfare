@@ -33,7 +33,8 @@ export class GroundController implements VehicleController {
   private readonly mv: VehicleConfig["movement"];
   private readonly turnRate: number;
   private readonly visualDrop: number;
-  private readonly water: WaterRegion | null;
+  private readonly water: WaterRegion | null; // boats: buoyancy + confined INSIDE the lake
+  private readonly avoidWater: WaterRegion | null; // ground units: blocked FROM the lake
 
   private readonly vel = new Vector3();
   private readonly force = new Vector3();
@@ -50,6 +51,8 @@ export class GroundController implements VehicleController {
     // Boats float; read the lake region stashed on the scene by the arena builder.
     const meta = scene.metadata as { water?: WaterRegion } | null;
     this.water = model === "boat" ? (meta?.water ?? null) : null;
+    // War-game rule: boats live on water, everything else is barred from it (no cars on the lake).
+    this.avoidWater = model !== "boat" ? (meta?.water ?? null) : null;
 
     // Physics proxy sized per class.
     const dims =
@@ -148,8 +151,33 @@ export class GroundController implements VehicleController {
     body.applyForce(this.force, this.body.getAbsolutePosition());
     body.setAngularVelocity(this.zero);
 
-    // Keep boats inside the lake with a soft inward nudge near the shore.
+    // Keep boats inside the lake; keep everything else OUT of it.
     if (this.water) this.confineToWater(body, pos);
+    else if (this.avoidWater) this.blockFromWater(body, pos);
+  }
+
+  /** Ground units: hard-stop at the shoreline so cars/tanks/troops never drive onto the lake. */
+  private blockFromWater(body: PhysicsAggregate["body"], pos: Vector3): void {
+    const w = this.avoidWater;
+    if (!w) return;
+    const margin = 2.5; // keep the hull clear of the waterline
+    const hx = w.w / 2 + margin;
+    const hz = w.d / 2 + margin;
+    const dx = pos.x - w.x;
+    const dz = pos.z - w.z;
+    if (Math.abs(dx) >= hx || Math.abs(dz) >= hz) return; // already clear of the lake
+    // Inside the shore band: push out along the shallowest axis and kill inward velocity.
+    const outX = hx - Math.abs(dx);
+    const outZ = hz - Math.abs(dz);
+    if (outX < outZ) {
+      const dir = dx >= 0 ? 1 : -1;
+      body.applyForce(this.force.set(dir * 120 * this.mv.mass, 0, 0), this.body.getAbsolutePosition());
+      if (this.vel.x * dir < 0) body.setLinearVelocity(this.vel.set(0, this.vel.y, this.vel.z));
+    } else {
+      const dir = dz >= 0 ? 1 : -1;
+      body.applyForce(this.force.set(0, 0, dir * 120 * this.mv.mass), this.body.getAbsolutePosition());
+      if (this.vel.z * dir < 0) body.setLinearVelocity(this.vel.set(this.vel.x, this.vel.y, 0));
+    }
   }
 
   private confineToWater(body: PhysicsAggregate["body"], pos: Vector3): void {

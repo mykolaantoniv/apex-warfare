@@ -10,6 +10,7 @@ import {
   ShadowGenerator,
 } from "@babylonjs/core";
 import type { InputState, VehicleConfig } from "../core/types";
+import type { WaterRegion } from "../data/types";
 import { expDamp, lerpAngle } from "../core/math";
 import type { VehicleController } from "./VehicleController";
 import { attachGlb, buildTankModel } from "./models";
@@ -34,6 +35,7 @@ export class TankController implements VehicleController {
   private readonly vel = new Vector3();
   private readonly force = new Vector3();
   private readonly zero = new Vector3(0, 0, 0);
+  private readonly avoidWater: WaterRegion | null; // tanks are barred from the lake
 
   private hullYaw = 0;
   private turretYaw = 0;
@@ -43,6 +45,7 @@ export class TankController implements VehicleController {
   constructor(scene: Scene, cfg: VehicleConfig, shadows: ShadowGenerator, spawn: Vector3, accent: Color3) {
     this.mv = cfg.movement;
     this.turnRate = cfg.movement.turnRate * DEG2RAD;
+    this.avoidWater = (scene.metadata as { water?: WaterRegion } | null)?.water ?? null;
 
     this.body = MeshBuilder.CreateBox("tankBody", { width: 2, height: 1, depth: 2.6 }, scene);
     this.body.position.set(spawn.x, 0.8, spawn.z); // rest on ground
@@ -113,6 +116,8 @@ export class TankController implements VehicleController {
     body.applyForce(this.force, this.body.getAbsolutePosition());
     body.setAngularVelocity(this.zero);
 
+    if (this.avoidWater) this.blockFromWater(body, this.body.position);
+
     this.forwardDir.set(fx, 0, fz); // chase cam follows the hull heading
 
     // Turret auto-aims at the locked target, else faces forward.
@@ -122,6 +127,28 @@ export class TankController implements VehicleController {
       if (Math.hypot(tx, tz) > 0.5) this.turretYawTarget = Math.atan2(tx, tz);
     } else {
       this.turretYawTarget = this.hullYaw;
+    }
+  }
+
+  /** Hard-stop at the shoreline so tanks never drive onto the lake (war-game terrain rule). */
+  private blockFromWater(body: PhysicsAggregate["body"], pos: Vector3): void {
+    const w = this.avoidWater;
+    if (!w) return;
+    const hx = w.w / 2 + 2.5;
+    const hz = w.d / 2 + 2.5;
+    const dx = pos.x - w.x;
+    const dz = pos.z - w.z;
+    if (Math.abs(dx) >= hx || Math.abs(dz) >= hz) return;
+    const outX = hx - Math.abs(dx);
+    const outZ = hz - Math.abs(dz);
+    if (outX < outZ) {
+      const dir = dx >= 0 ? 1 : -1;
+      body.applyForce(this.force.set(dir * 120 * this.mv.mass, 0, 0), this.body.getAbsolutePosition());
+      if (this.vel.x * dir < 0) body.setLinearVelocity(this.vel.set(0, this.vel.y, this.vel.z));
+    } else {
+      const dir = dz >= 0 ? 1 : -1;
+      body.applyForce(this.force.set(0, 0, dir * 120 * this.mv.mass), this.body.getAbsolutePosition());
+      if (this.vel.z * dir < 0) body.setLinearVelocity(this.vel.set(this.vel.x, this.vel.y, 0));
     }
   }
 

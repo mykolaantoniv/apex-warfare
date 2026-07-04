@@ -86,6 +86,24 @@ See `mobile-perf-optimizer` skill for the governor + tier presets.
 - Units: meters, seconds, m/s, degrees — documented in schemas.
 - Commit at each milestone (M1..M6) with clear messages.
 
+## WAR GAME — non-negotiable (user mandate, 2026-07-04)
+This is a **military war game** (private/personal — see the asset-policy note below). Hard rules
+that broke the first realism pass:
+- **Military war machines ONLY.** Every vehicle/model must read as military hardware (attack
+  heli, tanks, fighter jet, armored car/APC/technical, patrol gunboat, infantry). **No civilian
+  assets** — reject civilian cars/boats.
+- **Vehicles must obey terrain (strict):** boats = **water only, never on ground**; helicopters =
+  **fly above both ground and water, never clip below**; cars/bikes/soldiers = **ground only,
+  never on water**. Never spawn boats on land or land units in water. Enforced in BOTH the SP
+  controllers (`blockFromWater` in Ground/Tank controllers) and the MP shared sim. Maps must show
+  mountains and read as a realistic warzone (match the reference screenshots).
+
+## ⚠️ Asset policy CHANGED (2026-07-04): CC0-only is LIFTED
+The user made this a **private, non-commercial personal game** and said any models may be used
+regardless of license ("you can use any figures even if they under license... not for public or
+money"). So the CC0-only rule below is **no longer binding** — prefer genuinely military models
+from any source over easy CC0 ones. Still log sources in `ASSETS.md` as courtesy.
+
 ## Realism requirements (user priority)
 - **Physics:** Havok rigid bodies with real mass, linear/angular damping (air drag),
   applied thrust/lift; explosions impart radial impulses; off-center hits impart spin.
