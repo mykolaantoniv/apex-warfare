@@ -75,7 +75,16 @@ export class HeliController {
     this.rotor = model.mainRotor;
     this.tailRotor = model.tailRotor;
     for (const m of model.parts) shadows.addShadowCaster(m);
-    attachGlb(scene, this.visual, cfg, model.parts);
+    // The CC0 heli GLB has no separate rotor node, so keep the procedural rotor blades
+    // (children of the rotor hubs) visible + spinning over the real hull — hide everything else.
+    const rotorBlades = new Set<Mesh>([
+      ...model.mainRotor.getChildMeshes(false),
+      ...model.tailRotor.getChildMeshes(false),
+    ] as Mesh[]);
+    const hide = model.parts.filter((m) => !rotorBlades.has(m));
+    attachGlb(scene, this.visual, cfg, hide, ({ meshes }) => {
+      for (const m of meshes) shadows.addShadowCaster(m as Mesh);
+    });
   }
 
   get position(): Vector3 {

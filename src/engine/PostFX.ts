@@ -4,7 +4,6 @@ import {
   DefaultRenderingPipeline,
   SSAO2RenderingPipeline,
   ImageProcessingConfiguration,
-  MotionBlurPostProcess,
 } from "@babylonjs/core";
 import type { QualityTier } from "../core/types";
 
@@ -64,12 +63,10 @@ export function buildPostFX(scene: Scene, camera: Camera, tier: QualityTier): De
     pipeline.chromaticAberration.aberrationAmount = 2.2;
   }
 
-  // Camera motion blur for a sense of speed (med+; cheap camera-based, no prepass).
-  if (tier !== "low") {
-    const mb = new MotionBlurPostProcess("motionBlur", scene, 1.0, camera);
-    mb.motionStrength = heavy ? 0.6 : 0.45;
-    mb.isObjectBased = false;
-  }
+  // NOTE: camera motion blur was removed. It is camera-velocity based (no geometry prepass),
+  // and the fast third-person chase cam repositions so much per frame that *any* strength
+  // smeared the entire scene into a permanent radial haze. The crisp look wins.
+  void camera;
 
   return pipeline;
 }

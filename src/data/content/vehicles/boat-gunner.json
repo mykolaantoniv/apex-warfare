@@ -15,7 +15,7 @@
     "bankAngleMax": 0
   },
   "stats": { "maxHealth": 140, "armor": 0.2 },
-  "visual": { "scale": 1.15 },
+  "visual": { "scale": 1.15, "modelUrl": "models/boat.glb", "modelScale": 0.5, "yawOffset": 0, "heightOffset": 0 },
   "weaponId": "weapon-gunboat",
   "upgradeTreeId": "",
   "unlock": { "type": "start" }

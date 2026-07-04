@@ -15,7 +15,7 @@
     "bankAngleMax": 24
   },
   "stats": { "maxHealth": 100, "armor": 0.15 },
-  "visual": { "scale": 1.0 },
+  "visual": { "scale": 1.0, "modelUrl": "models/attack-heli.glb", "modelScale": 1.0, "yawOffset": 0, "heightOffset": 0 },
   "weaponId": "weapon-vulcan",
   "upgradeTreeId": "tree-hornet",
   "unlock": { "type": "start" }

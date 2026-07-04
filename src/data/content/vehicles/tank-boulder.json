@@ -15,7 +15,7 @@
     "bankAngleMax": 6
   },
   "stats": { "maxHealth": 230, "armor": 0.42 },
-  "visual": { "scale": 1.15 },
+  "visual": { "scale": 1.15, "modelUrl": "models/tank.glb", "modelScale": 0.26, "yawOffset": -90, "heightOffset": 0 },
   "weaponId": "weapon-boulder-cannon",
   "upgradeTreeId": "tree-boulder",
   "unlock": { "type": "start" }

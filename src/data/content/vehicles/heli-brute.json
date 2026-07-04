@@ -15,7 +15,7 @@
     "bankAngleMax": 12
   },
   "stats": { "maxHealth": 420, "armor": 0.35 },
-  "visual": { "scale": 1.6 },
+  "visual": { "scale": 1.6, "modelUrl": "models/attack-heli.glb", "modelScale": 1.0, "yawOffset": 0, "heightOffset": 0 },
   "weaponId": "weapon-brute-cannon",
   "upgradeTreeId": "",
   "unlock": { "type": "start" }

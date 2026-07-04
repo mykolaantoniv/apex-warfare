@@ -14,9 +14,37 @@ Drop CC0 `.glb` files in `public/models/` and set `visual.modelUrl` on the vehic
 loader (`attachGlb` in `src/vehicles/models.ts`) swaps them in, falling back to the built-in
 primitive mesh if absent. See `public/models/README.md`. Log every file added below.
 
+All models are **CC0 1.0** from [Poly Pizza](https://poly.pizza) (author links are the model pages).
+
+**Vehicles** (wired via `visual.modelUrl`):
+
 | Asset | File | Source (URL) | Author | License | Used for |
 |-------|------|--------------|--------|---------|----------|
-| _(none yet — pipeline ready, awaiting CC0 GLBs)_ | | | | CC0 | |
+| Helicopter | public/models/attack-heli.glb | https://poly.pizza/m/EQJ2MECUbx | kazuma | CC0 1.0 | All attack/transport helis (hornet, brute, mule, pest, wasp) |
+| Tank | public/models/tank.glb | https://poly.pizza/m/cW3zvvkMOM | Quaternius | CC0 1.0 | Heavy tank (tank-boulder) |
+| Tank | public/models/tank2.glb | https://poly.pizza/m/Dc4k4CooN3 | Quaternius | CC0 1.0 | Light tank (tank-raider) |
+| Swordfish | public/models/jet.glb | https://poly.pizza/m/7hMOlBjln0 | Quaternius | CC0 1.0 | Jet (jet-talon) |
+| Sports Car | public/models/buggy.glb | https://poly.pizza/m/1mkmFkAz5v | Quaternius | CC0 1.0 | Scout buggy (bike-scout) |
+| Boat | public/models/boat.glb | https://poly.pizza/m/5UEl54KsuC | Quaternius | CC0 1.0 | Patrol boat (boat-gunner) |
+
+**Environment props** (thin-instanced by `SceneBuilder`, per-biome):
+
+| Asset | File | Source (URL) | Author | License | Used for |
+|-------|------|--------------|--------|---------|----------|
+| Pine Tree with Snow | public/models/prop-pine-snow.glb | https://poly.pizza/m/17vQv2X5rh | Quaternius | CC0 1.0 | Snow biome pines |
+| Tree | public/models/prop-tree.glb | https://poly.pizza/m/2paAm1ja4w | Quaternius | CC0 1.0 | Forest trees |
+| Autumn Tree | public/models/prop-tree-autumn.glb | https://poly.pizza/m/2lRubrT6Na | Quaternius | CC0 1.0 | Industrial/autumn foliage |
+| Dead Tree | public/models/prop-tree-dead.glb | https://poly.pizza/m/16MPvqwlmE | Quaternius | CC0 1.0 | Industrial/dead foliage |
+| Rock | public/models/prop-rock.glb | https://poly.pizza/m/34W5ymEePk | Quaternius | CC0 1.0 | Scatter rocks |
+| Rock Large | public/models/prop-rock-large.glb | https://poly.pizza/m/54jZKTAt5p | Quaternius | CC0 1.0 | Large boulders |
+| Mountain | public/models/prop-mountain.glb | https://poly.pizza/m/7HYR2s9JVi | Quaternius | CC0 1.0 | Border-terrain relief |
+| Hut | public/models/prop-cabin.glb | https://poly.pizza/m/4MJWbyd6vw | Quaternius | CC0 1.0 | Snow-biome cabins |
+| Container Small | public/models/prop-container.glb | https://poly.pizza/m/B79i6fHgVU | Quaternius | CC0 1.0 | Industrial containers |
+| Exploding Barrel | public/models/prop-barrel.glb | https://poly.pizza/m/1orHe0kCc1 | Quaternius | CC0 1.0 | Barrels |
+| Pipe | public/models/prop-pipe.glb | https://poly.pizza/m/CpCnSuo786 | Quaternius | CC0 1.0 | Industrial pipes |
+| Crate | public/models/prop-crate.glb | https://poly.pizza/m/CnMGEDwg8s | Quaternius | CC0 1.0 | Crates |
+| Barrier Large | public/models/prop-barrier.glb | https://poly.pizza/m/gLbBiYwt7l | Quaternius | CC0 1.0 | Concrete cover barriers |
+| Traffic Barrier | public/models/prop-barrier-traffic.glb | https://poly.pizza/m/cM3aJPU9NS | Quaternius | CC0 1.0 | Low cover barriers |
 
 ## Textures / Materials (PBR)
 | Asset | File | Source (URL) | Author | License | Used for |

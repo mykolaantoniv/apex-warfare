@@ -15,7 +15,7 @@
     "bankAngleMax": 6
   },
   "stats": { "maxHealth": 190, "armor": 0.32 },
-  "visual": { "scale": 1.1 },
+  "visual": { "scale": 1.1, "modelUrl": "models/tank2.glb", "modelScale": 1.4, "yawOffset": 0, "heightOffset": 0 },
   "weaponId": "weapon-raider-cannon",
   "upgradeTreeId": "",
   "unlock": { "type": "start" }

@@ -89,7 +89,14 @@ export class GroundController implements VehicleController {
     this.visual = built.root;
     this.spinners = built.spinners;
     for (const m of built.parts) shadows.addShadowCaster(m);
-    attachGlb(scene, this.visual, cfg, built.parts);
+    attachGlb(scene, this.visual, cfg, built.parts, ({ meshes, spinners }) => {
+      for (const m of meshes) shadows.addShadowCaster(m as Mesh);
+      // Real GLB exposes its own wheels — spin those instead of the now-hidden proc wheels.
+      if (spinners.length > 0) {
+        this.spinners.length = 0;
+        this.spinners.push(...spinners);
+      }
+    });
 
     // Visual origin offset so the model sits on the ground / waterline.
     this.visualDrop = model === "boat" ? 0.5 : model === "soldier" ? 0.85 : 0.35;

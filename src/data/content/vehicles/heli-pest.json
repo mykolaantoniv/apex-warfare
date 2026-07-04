@@ -15,7 +15,7 @@
     "bankAngleMax": 22
   },
   "stats": { "maxHealth": 55, "armor": 0.05 },
-  "visual": { "scale": 0.92 },
+  "visual": { "scale": 0.92, "modelUrl": "models/attack-heli.glb", "modelScale": 1.0, "yawOffset": 0, "heightOffset": 0 },
   "weaponId": "weapon-pest-cannon",
   "upgradeTreeId": "",
   "unlock": { "type": "start" }

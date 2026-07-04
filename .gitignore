@@ -16,3 +16,7 @@ acrlog.txt
 # reference screenshots / photos (kept locally, not part of source)
 /*.PNG
 /*.png
+
+# local verification helper scripts (playwright smoke/screenshot)
+/.shot.mjs
+/.gsmoke.mjs

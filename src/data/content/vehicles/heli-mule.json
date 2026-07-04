@@ -15,7 +15,7 @@
     "bankAngleMax": 16
   },
   "stats": { "maxHealth": 170, "armor": 0.28 },
-  "visual": { "scale": 1.25 },
+  "visual": { "scale": 1.25, "modelUrl": "models/attack-heli.glb", "modelScale": 1.0, "yawOffset": 0, "heightOffset": 0 },
   "weaponId": "weapon-mule-cannon",
   "upgradeTreeId": "tree-mule",
   "unlock": { "type": "stars", "required": 5 }

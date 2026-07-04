@@ -15,7 +15,7 @@
     "bankAngleMax": 42
   },
   "stats": { "maxHealth": 78, "armor": 0.08 },
-  "visual": { "scale": 1.05 },
+  "visual": { "scale": 1.05, "modelUrl": "models/jet.glb", "modelScale": 0.8, "yawOffset": 180, "heightOffset": 0 },
   "weaponId": "weapon-talon-cannon",
   "upgradeTreeId": "tree-talon",
   "unlock": { "type": "stars", "required": 13 }

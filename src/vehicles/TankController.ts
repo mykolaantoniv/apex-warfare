@@ -61,7 +61,9 @@ export class TankController implements VehicleController {
     this.hull = model.hull;
     this.turret = model.turret;
     for (const m of model.parts) shadows.addShadowCaster(m);
-    attachGlb(scene, this.visual, cfg, model.parts);
+    attachGlb(scene, this.visual, cfg, model.parts, ({ meshes }) => {
+      for (const m of meshes) shadows.addShadowCaster(m as Mesh);
+    });
   }
 
   get position(): Vector3 {

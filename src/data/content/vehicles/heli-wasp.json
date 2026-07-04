@@ -15,7 +15,7 @@
     "bankAngleMax": 26
   },
   "stats": { "maxHealth": 35, "armor": 0.0 },
-  "visual": { "scale": 0.8 },
+  "visual": { "scale": 0.8, "modelUrl": "models/attack-heli.glb", "modelScale": 1.0, "yawOffset": 0, "heightOffset": 0 },
   "weaponId": "weapon-wasp-mg",
   "upgradeTreeId": "",
   "unlock": { "type": "start" }

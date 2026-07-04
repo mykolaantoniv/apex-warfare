@@ -1,4 +1,14 @@
-import { Scene, TransformNode, Mesh, MeshBuilder, Color3, PBRMaterial, Quaternion, SceneLoader } from "@babylonjs/core";
+import {
+  Scene,
+  TransformNode,
+  AbstractMesh,
+  Mesh,
+  MeshBuilder,
+  Color3,
+  PBRMaterial,
+  Quaternion,
+  SceneLoader,
+} from "@babylonjs/core";
 // Register the .glb/.gltf loader (side-effect imports). We pull in the file loader + the 2.0
 // parser directly rather than the barrel, which drags in the KHR_interactivity extension whose
 // FlowGraph deps don't resolve under this core version.
@@ -7,17 +17,60 @@ import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import type { VehicleConfig } from "../core/types";
 
 /**
+ * Per-file rigging hints for CC0 GLBs. Real downloaded models carry quirks the primitive
+ * fallbacks don't (a rigged soldier holding *every* weapon at once, wheel sub-nodes we want to
+ * spin), so we describe those here — keyed by the GLB filename — instead of bloating every
+ * vehicle JSON. Unknown files just render whole.
+ */
+interface GlbRig {
+  /** Whitelist of GLB mesh names to keep; every other loaded mesh is hidden. */
+  readonly keepMeshes?: readonly string[];
+  /** GLB transform-node names to hand back so the controller can spin them (wheels). */
+  readonly spinNodes?: readonly string[];
+}
+const GLB_RIGS: Record<string, GlbRig> = {
+  // Quaternius soldier ships holding 15 weapons simultaneously — keep body + a single rifle.
+  "soldier.glb": { keepMeshes: ["Body", "Head", "ShoulderPad.L", "ShoulderPad.R", "AK"] },
+  // Sports car exposes its wheels as separate nodes — spin them as the buggy rolls.
+  "buggy.glb": {
+    spinNodes: [
+      "SportsCar2_BackWheels_Cylinder.002",
+      "SportsCar2_FrontLeftWheel_Cylinder.017",
+      "SportsCar2_FrontRightWheel_Cylinder.018",
+    ],
+  },
+};
+
+/** Nodes/meshes the loaded GLB hands back to its controller once it finishes importing. */
+export interface GlbHandback {
+  /** All GLB render meshes (so the caller can register shadow casters). */
+  readonly meshes: readonly AbstractMesh[];
+  /** Rig spin nodes (wheels) the caller should rotate each frame, if any. */
+  readonly spinners: readonly TransformNode[];
+}
+
+/**
  * If the vehicle config points at a CC0 GLB, load it asynchronously and parent it under the
  * controller's visual root, then hide the built-in primitive meshes. Any failure (missing
  * file, decode error) is swallowed so the primitive model stays as a graceful fallback —
  * i.e. the game always renders something, and drops in real art the moment a file exists.
+ *
+ * `onReady` fires (only on success) with the loaded meshes + any rig spin nodes so the caller
+ * can add shadow casters and swap its procedural spinners for the real ones.
  */
-export function attachGlb(scene: Scene, root: TransformNode, cfg: VehicleConfig, hideOnLoad: readonly Mesh[]): void {
+export function attachGlb(
+  scene: Scene,
+  root: TransformNode,
+  cfg: VehicleConfig,
+  hideOnLoad: readonly Mesh[],
+  onReady?: (handback: GlbHandback) => void,
+): void {
   const url = cfg.visual.modelUrl;
   if (!url) return;
   const slash = url.lastIndexOf("/");
   const dir = url.slice(0, slash + 1);
   const file = url.slice(slash + 1);
+  const rig = GLB_RIGS[file] ?? {};
   SceneLoader.ImportMeshAsync("", dir, file, scene)
     .then((res) => {
       const holder = new TransformNode("glb", scene);
@@ -25,11 +78,24 @@ export function attachGlb(scene: Scene, root: TransformNode, cfg: VehicleConfig,
       holder.scaling.setAll(cfg.visual.modelScale ?? 1);
       holder.rotation.y = ((cfg.visual.yawOffset ?? 0) * Math.PI) / 180;
       holder.position.y = cfg.visual.heightOffset ?? 0;
+      const keep = rig.keepMeshes ? new Set(rig.keepMeshes) : undefined;
       for (const m of res.meshes) {
         if (!m.parent) m.parent = holder;
         m.isPickable = false;
+        // Rigged kits (soldier) load extra meshes we don't want (spare weapons) — hide any
+        // mesh not on the keep-list.
+        if (keep && m.name !== "__root__" && m.getTotalVertices() > 0 && !keep.has(m.name)) {
+          m.setEnabled(false);
+        }
+      }
+      const spinners: TransformNode[] = [];
+      for (const name of rig.spinNodes ?? []) {
+        const node =
+          res.transformNodes.find((t) => t.name === name) ?? res.meshes.find((m) => m.name === name);
+        if (node) spinners.push(node);
       }
       for (const m of hideOnLoad) m.setEnabled(false); // swap primitives out for the real art
+      onReady?.({ meshes: res.meshes, spinners });
     })
     .catch((e: unknown) => {
       console.warn(`[apex] GLB "${url}" failed to load; keeping primitive model.`, e);
@@ -454,14 +520,31 @@ export interface ShowcaseModel {
 /** Visual-only model for the garage showcase (spinners = rotors to turn). */
 export function buildShowcaseModel(scene: Scene, cfg: VehicleConfig, accent: Color3): ShowcaseModel {
   const scale = cfg.visual.scale;
-  const show = (m: { root: TransformNode; parts: Mesh[] }, spinners: TransformNode[]): ShowcaseModel => {
-    attachGlb(scene, m.root, cfg, m.parts); // real GLB in the garage too, if present
-    return { root: m.root, spinners, parts: m.parts };
+  // `keepVisible` meshes stay shown when a GLB swaps in (heli keeps its proc rotor, which the
+  // CC0 GLB lacks). If the GLB exposes its own spin nodes (wheels) we swap the showcase spinners.
+  const show = (
+    m: { root: TransformNode; parts: Mesh[] },
+    spinners: TransformNode[],
+    keepVisible?: ReadonlySet<Mesh>,
+  ): ShowcaseModel => {
+    const hide = keepVisible ? m.parts.filter((p) => !keepVisible.has(p)) : m.parts;
+    const out: ShowcaseModel = { root: m.root, spinners, parts: m.parts };
+    attachGlb(scene, m.root, cfg, hide, ({ spinners: rigSpin }) => {
+      if (rigSpin.length > 0) {
+        out.spinners.length = 0;
+        out.spinners.push(...rigSpin);
+      }
+    });
+    return out;
   };
   switch (cfg.movement.model) {
     case "heli": {
       const m = buildHeliModel(scene, accent, scale);
-      return show(m, [m.mainRotor, m.tailRotor]);
+      const blades = new Set<Mesh>([
+        ...m.mainRotor.getChildMeshes(false),
+        ...m.tailRotor.getChildMeshes(false),
+      ] as Mesh[]);
+      return show(m, [m.mainRotor, m.tailRotor], blades);
     }
     case "jet":
       return show(buildJetModel(scene, accent, scale), []);
