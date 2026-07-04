@@ -1,6 +1,10 @@
 # ASSETS — License Log
 
-**Policy: CC0 assets ONLY.** Every asset used in Apex Warfare must be listed here with its
+> **2026-07-04 — asset policy changed:** this is now a **private, non-commercial personal game**,
+> so the CC0-only rule is lifted — any-licensed models may be used (see CLAUDE.md). Military
+> vehicle models below are **CC-BY 3.0** (Poly Pizza), chosen for a proper war-machine look.
+
+**Legacy policy (superseded): CC0 assets ONLY.** Every asset used in Apex Warfare must be listed here with its
 source URL and license. CC0 (public domain) sources: [Kenney.nl](https://kenney.nl),
 [Quaternius](https://quaternius.com), [Poly Pizza](https://poly.pizza) (filter to CC0),
 [ambientCG](https://ambientcg.com) (CC0 PBR textures), [Poly Haven](https://polyhaven.com)
@@ -23,9 +27,9 @@ All models are **CC0 1.0** from [Poly Pizza](https://poly.pizza) (author links a
 | Helicopter | public/models/attack-heli.glb | https://poly.pizza/m/EQJ2MECUbx | kazuma | CC0 1.0 | All attack/transport helis (hornet, brute, mule, pest, wasp) |
 | Tank | public/models/tank.glb | https://poly.pizza/m/cW3zvvkMOM | Quaternius | CC0 1.0 | Heavy tank (tank-boulder) |
 | Tank | public/models/tank2.glb | https://poly.pizza/m/Dc4k4CooN3 | Quaternius | CC0 1.0 | Light tank (tank-raider) |
-| Swordfish | public/models/jet.glb | https://poly.pizza/m/7hMOlBjln0 | Quaternius | CC0 1.0 | Jet (jet-talon) |
-| Sports Car | public/models/buggy.glb | https://poly.pizza/m/1mkmFkAz5v | Quaternius | CC0 1.0 | Scout buggy (bike-scout) |
-| Boat | public/models/boat.glb | https://poly.pizza/m/5UEl54KsuC | Quaternius | CC0 1.0 | Patrol boat (boat-gunner) |
+| Low poly Fighter | public/models/mil-jet.glb | https://poly.pizza/m/1fi8ZIDdFCP | Stephen Graybill | CC-BY 3.0 | Fighter jet (jet-talon) — replaced the civilian "Swordfish" |
+| Military Motorbike | public/models/mil-bike.glb | https://poly.pizza/m/9SwnIlPjNv | Zsky | CC-BY 3.0 | Scout bike (bike-scout) — replaced the civilian sports car |
+| Military Boat | public/models/mil-boat.glb | https://poly.pizza/m/wouBxOe3CD | Zsky | CC-BY 3.0 | Patrol gunboat (boat-gunner) — replaced the civilian dinghy |
 
 **Environment props** (thin-instanced by `SceneBuilder`, per-biome):
 

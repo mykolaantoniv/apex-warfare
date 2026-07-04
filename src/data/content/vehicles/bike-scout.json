@@ -15,7 +15,7 @@
     "bankAngleMax": 0
   },
   "stats": { "maxHealth": 55, "armor": 0.05 },
-  "visual": { "scale": 1.1, "modelUrl": "models/buggy.glb", "modelScale": 0.7, "yawOffset": 0, "heightOffset": 0 },
+  "visual": { "scale": 1.1, "modelUrl": "models/mil-bike.glb", "modelScale": 0.5, "yawOffset": 90, "heightOffset": 0.5 },
   "weaponId": "weapon-scout-mg",
   "upgradeTreeId": "",
   "unlock": { "type": "start" }

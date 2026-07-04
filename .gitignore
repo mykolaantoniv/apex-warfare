@@ -25,3 +25,5 @@ acrlog.txt
 
 # agent worktrees
 /.claude/worktrees/
+/.iconrender.mjs
+/.fxtest.mjs
