@@ -21,6 +21,8 @@ export const MAP_WORLDS: Record<string, MapWorld> = {
   "map-locker": { half: 95, water: { x: 48, z: 0, w: 34, d: 190 } }, // Highland Pass
   "map-shower": { half: 90, water: { x: 40, z: -30, w: 50, d: 44 } }, // Dust Basin
   "map-sink": { half: 85, water: { x: 0, z: 12, w: 170, d: 22 } }, // Riverside
+  "map-frost": { half: 90, water: { x: 46, z: 0, w: 30, d: 150 } }, // Frostline
+  "map-foundry": { half: 88 }, // The Foundry (no water)
 };
 
 export function worldFor(mapId: string): MapWorld {
