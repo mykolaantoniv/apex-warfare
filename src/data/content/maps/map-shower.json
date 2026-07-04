@@ -1,17 +1,17 @@
 {
   "id": "map-shower",
-  "name": "Dust Basin",
-  "theme": "warzone",
+  "name": "Verdant Valley",
+  "theme": "forest",
   "half": 90,
-  "fogDensity": 0.004,
-  "sunDir": [-0.45, -1, -0.35],
+  "fogDensity": 0.005,
+  "sunDir": [-0.4, -0.92, -0.3],
   "palette": {
     "floor": [0.8, 0.84, 0.87],
     "grout": [0.55, 0.6, 0.66],
     "wall": [0.7, 0.78, 0.82],
-    "accent": [0.15, 0.85, 1.0],
-    "fog": [0.7, 0.75, 0.8],
-    "clear": [0.04, 0.055, 0.08]
+    "accent": [0.5, 0.95, 0.6],
+    "fog": [0.66, 0.78, 0.62],
+    "clear": [0.05, 0.08, 0.06]
   },
   "cover": [
     [24, 14, 30],
