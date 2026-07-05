@@ -37,6 +37,17 @@ const RING_POOL = 6;
 const SCORCH_POOL = 10;
 const SCORCH_LIFE_S = 12; // scorch decals linger roughly as long as a wreck (>=10s, C3b AC2)
 
+// Near-white, warm muzzle color — reads as a bright nose light against dark maps (vs. the
+// orange default used by impact/explosion flashes).
+const MUZZLE_LIGHT_COLOR = new Color3(1, 0.92, 0.72);
+const MUZZLE_LIGHT_INTENSITY = 70; // C5: brighter than the old 30 so it visibly lights the nose
+const MUZZLE_LIGHT_MS = 80; // still a quick pop, not a lingering glow
+
+// C5: dedicated bright-white "pop" sprite layered under the light — 2 frames @60fps grow, then
+// fades out fast, distinct from the warm spark burst so a dark-map shot reads as a real flash.
+const MUZZLE_POP_MIN_S = 0.032; // ~2 frames @60fps
+const MUZZLE_POP_MAX_S = 0.05;
+
 /**
  * Pooled FX: sparks, billowing smoke, light flashes, plus a fireball core, an expanding
  * shockwave ring, and a lingering ground scorch decal for cinematic explosions.
@@ -49,6 +60,7 @@ export class Particles {
   private readonly dust: ParticleSystem;
   private readonly spray: ParticleSystem;
   private readonly debris: ParticleSystem;
+  private readonly muzzlePop: ParticleSystem;
   private readonly sparkPos = new Vector3();
   private readonly smokePos = new Vector3();
   private readonly smokeColumnPos = new Vector3();
@@ -56,6 +68,7 @@ export class Particles {
   private readonly dustPos = new Vector3();
   private readonly sprayPos = new Vector3();
   private readonly debrisPos = new Vector3();
+  private readonly muzzlePopPos = new Vector3();
 
   private readonly lights: PointLight[] = [];
   private readonly lightLife: number[] = [];
@@ -105,6 +118,26 @@ export class Particles {
     this.fireball.maxEmitPower = 4;
     this.fireball.emitRate = 0;
     this.fireball.start();
+
+    // --- Muzzle pop (C5): bright white-hot 2-frame flash, distinct from the warm spark burst.
+    // Grows fast then collapses to nothing within ~2-3 frames — a "pop", never a lingering glow.
+    this.muzzlePop = new ParticleSystem("muzzlePop", 200, scene);
+    this.muzzlePop.particleTexture = soft;
+    this.muzzlePop.emitter = this.muzzlePopPos;
+    this.muzzlePop.createSphereEmitter(0.06);
+    this.muzzlePop.blendMode = ParticleSystem.BLENDMODE_ADD;
+    this.muzzlePop.color1 = new Color4(1, 0.97, 0.85, 1);
+    this.muzzlePop.color2 = new Color4(1, 0.8, 0.45, 1);
+    this.muzzlePop.colorDead = new Color4(1, 0.5, 0.15, 0);
+    this.muzzlePop.addSizeGradient(0, 0.4); // frame 1: pop in
+    this.muzzlePop.addSizeGradient(0.45, 1.5); // peak size, bigger than the old spark-only flash
+    this.muzzlePop.addSizeGradient(1, 0.15); // frame 2: collapse — no lingering glow
+    this.muzzlePop.minLifeTime = MUZZLE_POP_MIN_S;
+    this.muzzlePop.maxLifeTime = MUZZLE_POP_MAX_S;
+    this.muzzlePop.minEmitPower = 0.1;
+    this.muzzlePop.maxEmitPower = 0.4;
+    this.muzzlePop.emitRate = 0;
+    this.muzzlePop.start();
 
     // --- Smoke (soft, billowing, lit grey, drifts up) ---
     this.smoke = new ParticleSystem("smoke", 600, scene);
@@ -328,10 +361,17 @@ export class Particles {
     this.spawnScorch(pos, power);
   }
 
+  /**
+   * C5: full muzzle stack — bigger 2-frame white-hot pop sprite, a warm spark burst, a wisp of
+   * smoke, and a brighter pooled point-light pulse so firing in a dark map visibly lights the
+   * vehicle nose. All pooled — no per-shot allocation.
+   */
   muzzle(pos: Vector3): void {
+    this.muzzlePopPos.copyFrom(pos);
+    this.muzzlePop.manualEmitCount = 3;
     this.burstSparks(pos, 5);
     this.burstSmoke(pos, 1); // wisp of muzzle smoke
-    this.flash(pos, 30, 70);
+    this.flash(pos, MUZZLE_LIGHT_INTENSITY, MUZZLE_LIGHT_MS, MUZZLE_LIGHT_COLOR);
   }
 
   damageSmoke(pos: Vector3, intensity: number): void {
