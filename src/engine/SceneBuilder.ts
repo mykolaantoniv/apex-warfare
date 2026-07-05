@@ -1,7 +1,6 @@
 import {
   Scene,
   MeshBuilder,
-  Mesh,
   Vector3,
   Color3,
   PBRMaterial,
@@ -174,21 +173,65 @@ function pbr(scene: Scene, name: string, o: PBROpts): PBRMaterial {
   return mat;
 }
 
+/** Circular exclusion zone (world x/z + radius) around one authored prop, for RNG-scatter avoidance. */
+interface ExclusionZone {
+  readonly x: number;
+  readonly z: number;
+  readonly r: number;
+}
+
+/**
+ * Buckets a map's hand-authored `props` (BACKLOG §C0) by key, in world units (yaw converted from
+ * the JSON's degrees to radians, matching the `cover` convention). Shared by `dressProps` (which
+ * merges these into the same per-key thin-instance buckets as its RNG scatter — one draw call per
+ * key, authored + procedural combined) and by `authoredExclusionZones` below.
+ */
+function authoredBuckets(map: MapConfig): Map<PropKey, Placement[]> {
+  const buckets = new Map<PropKey, Placement[]>();
+  for (const p of map.props ?? []) {
+    let b = buckets.get(p.key);
+    if (!b) buckets.set(p.key, (b = []));
+    b.push({ x: p.x, z: p.z, yaw: (p.yaw ?? 0) * (Math.PI / 180), s: p.s ?? 1 });
+  }
+  return buckets;
+}
+
+/** One avoidance circle per authored prop, sized off its real collider footprint (or a small
+ * default for colliderless decoration), so RNG scatter can skip anything that would clip it. */
+function authoredExclusionZones(map: MapConfig): ExclusionZone[] {
+  return (map.props ?? []).map((p) => {
+    const def = PROPS[p.key];
+    const r = (def.colliderR > 0 ? def.colliderR : 1.2) * def.scale * (p.s ?? 1);
+    return { x: p.x, z: p.z, r };
+  });
+}
+
+/** True if (x,z) sits within ~2x an authored prop's footprint radius (bbox-overlap guard). */
+function nearAuthored(x: number, z: number, zones: readonly ExclusionZone[]): boolean {
+  for (const zone of zones) {
+    if (Math.hypot(x - zone.x, z - zone.z) < zone.r * 2) return true;
+  }
+  return false;
+}
+
 /**
  * Mid-field clutter: real CC0 GLB props (rocks / containers / pipes / barrels / crates + biome
  * landmarks like cabins) scattered by a seeded RNG so the layout is deterministic per map but
- * varies between maps. Each prop type renders as ONE thin-instanced draw call; invisible physics
- * colliders are added synchronously so vehicles collide immediately. Replaces the old procedural
- * box buildings/containers.
+ * varies between maps, PLUS the map's hand-authored POI/road-strip props (BACKLOG §C0) merged
+ * into the same per-key buckets. RNG placements are skipped near authored clusters so nothing
+ * overlaps. Each prop type still renders as ONE thin-instanced draw call; invisible physics
+ * colliders are added synchronously so vehicles collide immediately.
  */
 function dressProps(scene: Scene, map: MapConfig, shadows: ShadowGenerator, biome: Biome): void {
   const H = map.half;
   const rand = seededRng(1337 + Math.round(H));
   const [px, pz] = map.spawns.player;
   const clear = (x: number, z: number): boolean => Math.hypot(x - px, z - pz) > 20;
+  const zones = authoredExclusionZones(map);
 
-  // Bucket placements per prop key so each becomes a single thin-instanced mesh.
-  const buckets = new Map<PropKey, Placement[]>();
+  // Bucket placements per prop key so each becomes a single thin-instanced mesh — start from the
+  // authored props so authored + RNG of the same key share one draw call.
+  const buckets = authoredBuckets(map);
   const add = (key: PropKey, p: Placement): void => {
     let b = buckets.get(key);
     if (!b) buckets.set(key, (b = []));
@@ -198,13 +241,13 @@ function dressProps(scene: Scene, map: MapConfig, shadows: ShadowGenerator, biom
   for (let i = 0; i < biome.scatterCount; i++) {
     const x = (rand() * 2 - 1) * (H - 12);
     const z = (rand() * 2 - 1) * (H - 12);
-    if (!clear(x, z)) continue;
+    if (!clear(x, z) || nearAuthored(x, z, zones)) continue;
     add(pickWeighted(biome.scatter, rand()), { x, z, s: 0.8 + rand() * 0.6, yaw: rand() * Math.PI * 2 });
   }
   for (let i = 0; i < biome.landmarkCount; i++) {
     const x = (rand() * 2 - 1) * (H - 18);
     const z = (rand() * 2 - 1) * (H - 18);
-    if (!clear(x, z)) continue;
+    if (!clear(x, z) || nearAuthored(x, z, zones)) continue;
     add(pickWeighted(biome.landmarks, rand()), { x, z, s: 0.9 + rand() * 0.4, yaw: rand() * Math.PI * 2 });
   }
 
@@ -223,19 +266,6 @@ function seededRng(seed: number): () => number {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-/** Merge same-material meshes into one static, frozen, non-pickable draw call. */
-function mergeStatic(name: string, meshes: Mesh[], mat: PBRMaterial): Mesh | null {
-  if (meshes.length === 0) return null;
-  const merged = Mesh.MergeMeshes(meshes, true, true, undefined, false, false);
-  if (!merged) return null;
-  merged.name = name;
-  merged.material = mat;
-  merged.isPickable = false;
-  merged.freezeWorldMatrix();
-  merged.doNotSyncBoundingInfo = true;
-  return merged;
 }
 
 /**
@@ -259,40 +289,37 @@ function buildOpenTerrain(scene: Scene, map: MapConfig, shadows: ShadowGenerator
   skirt.material = skirtMat;
   skirt.freezeWorldMatrix();
 
-  const rockMat = new PBRMaterial("mtnRock", scene);
-  rockMat.albedoColor = biome.mountainTint.clone();
-  rockMat.roughness = 1;
-  rockMat.metallic = 0;
-  const rockDark = new PBRMaterial("mtnRockD", scene);
-  rockDark.albedoColor = biome.mountainTint.scale(0.72);
-  rockDark.roughness = 1;
-
-  // Mountain ring — low-poly cones at ~1.5×half, varied so the horizon feels natural.
-  const rocks: Mesh[] = [];
-  const rocksDark: Mesh[] = [];
-  const ring = H * 1.55;
-  const count = 26;
-  for (let i = 0; i < count; i++) {
-    const a = (i / count) * Math.PI * 2 + (rng() - 0.5) * 0.12;
-    const r = ring * (0.9 + rng() * 0.35);
-    const height = H * (0.35 + rng() * 0.5);
-    const base = height * (0.9 + rng() * 0.5);
-    const mtn = MeshBuilder.CreateCylinder(
-      "mtn",
-      { height, diameterTop: 0, diameterBottom: base, tessellation: 6 + Math.floor(rng() * 3) },
-      scene,
-    );
-    mtn.position.set(Math.cos(a) * r, height / 2 - 2, Math.sin(a) * r);
-    mtn.rotation.y = rng() * Math.PI;
-    mtn.scaling.x = 0.8 + rng() * 0.6;
-    (rng() < 0.5 ? rocks : rocksDark).push(mtn);
+  // Border relief (BACKLOG §C0b) — the real low-poly mountain GLB thin-instanced in two rings
+  // instead of discrete cones, for an irregular silhouette. Near ring reads at full detail; a
+  // second, farther + bigger ring sits beyond it and lets the per-map fog swallow its base for
+  // depth. `PROPS.mountain` has colliderR:0 (purely a horizon backdrop, well outside the
+  // perimeter walls) so no physics colliders are needed. 2 draw calls total (well under the 6
+  // budget); the model is ~194 tris so even ~45 instances stays far under the 40k tri budget.
+  const nearMtn: Placement[] = [];
+  const nearCount = 22;
+  const nearRing = H * 1.35;
+  for (let i = 0; i < nearCount; i++) {
+    const a = (i / nearCount) * Math.PI * 2 + (rng() - 0.5) * 0.28;
+    const r = nearRing * (0.92 + rng() * 0.22);
+    nearMtn.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, yaw: rng() * Math.PI * 2, s: 2.2 + rng() * 1.6 });
   }
-  mergeStatic("mountains", rocks, rockMat);
-  mergeStatic("mountainsDark", rocksDark, rockDark);
+  scatterProp(scene, PROPS.mountain, nearMtn, shadows);
+
+  const farMtn: Placement[] = [];
+  const farCount = 18;
+  const farRing = H * 2.05;
+  for (let i = 0; i < farCount; i++) {
+    // Angular offset staggers far peaks against the near ring instead of lining up radially.
+    const a = (i / farCount) * Math.PI * 2 + (rng() - 0.5) * 0.32 + 0.17;
+    const r = farRing * (0.9 + rng() * 0.3);
+    farMtn.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, yaw: rng() * Math.PI * 2, s: 3.4 + rng() * 2.2 });
+  }
+  scatterProp(scene, PROPS.mountain, farMtn, shadows);
 
   // Trees — real CC0 GLB species per biome, each thin-instanced into a single draw call.
   const [px, pz] = map.spawns.player;
   const clearOfSpawn = (x: number, z: number): boolean => Math.hypot(x - px, z - pz) > 16;
+  const authoredZones = authoredExclusionZones(map);
   const treeBuckets = new Map<PropKey, Placement[]>();
   const addTree = (x: number, z: number, s: number): void => {
     const key = pickWeighted(biome.trees, rng());
@@ -313,7 +340,7 @@ function buildOpenTerrain(scene: Scene, map: MapConfig, shadows: ShadowGenerator
   for (let i = 0; i < biome.treeInside; i++) {
     const x = (rng() * 2 - 1) * (H - 14);
     const z = (rng() * 2 - 1) * (H - 14);
-    if (!clearOfSpawn(x, z)) continue;
+    if (!clearOfSpawn(x, z) || nearAuthored(x, z, authoredZones)) continue;
     const s = 0.85 + rng() * 0.6;
     addTree(x, z, s);
     treeColliderPlaces.push({ x, z, s });
