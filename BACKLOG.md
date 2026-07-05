@@ -110,6 +110,29 @@ One rotating daily challenge (e.g. "10 kills with a tank") stored locally; rewar
 - AC: Challenge shown on the menu with progress; completing it grants scrap once per calendar day
   (UTC), persists across reloads.
 
+### B6. BUG: tank hull doesn't visually rotate when steering (P0, S)
+Steering a tank slides it along X/Z but the visible model never yaws — it looks like it's
+translating without turning. Root cause: in `TankController.fixedUpdate` the heading is integrated
+into `hullYaw` and applied via `this.hull.rotation.y = this.hullYaw` (`frameUpdate`), but the GLB
+tank body is attached to the ROOT node — `attachGlb(scene, this.visual, …)` parents the GLB holder
+to `this.visual`, not to `this.hull` (see `src/vehicles/TankController.ts:67` + `src/vehicles/models.ts:77`).
+So only the invisible primitive-placeholder hull rotates; the real GLB mesh stays fixed while
+`forwardDir` still steers the chase cam, producing the "moves but never turns" look. (Check the
+same pattern in `GroundController.ts` for cars/bikes.)
+- AC1: A steering tank visibly yaws its hull to face its travel direction (GLB and placeholder
+  models alike); turret still auto-aims independently at the locked target.
+- AC2: Fix is either parenting the GLB to the hull node (turret split preserved) or applying
+  `hullYaw` to the visual root without double-rotating the placeholder hull — whichever keeps
+  turret aim correct. No physics change (body angular velocity stays zeroed).
+- AC3: **Audit + verify EVERY vehicle class yaws** — not just the tank. Confirm each controller
+  rotates its visible GLB (not just a placeholder) to face travel/heading: tank, car/bike/APC
+  (`GroundController.ts`), boat/gunboat, jet (`JetController.ts`), heli (`HeliController.ts`),
+  and soldier. List each class + pass/fail in the PR; fix any that share the same root-attach
+  bug (GLB parented to a non-rotating root).
+- AC4: **Verify for ENEMY/AI-driven units too**, not only the player. Spawn an enemy of each
+  class and confirm the AI-steered model visibly yaws as it maneuvers (same controllers drive
+  both player and bots, so a root-attach bug hits both — prove it on screen/log, don't assume).
+
 ## C. Visual
 
 ### C0. Map design pass — composed layouts, not RNG scatter (P0, L) ⭐ *biggest quality lever*
@@ -347,6 +370,6 @@ match XP (name shows rank chevrons in lobby/scoreboard).
 | Slice | Contents |
 |-------|----------|
 | 1 (now) | **C0 map design** · **C0b relief** · **C3b death moments** · A1 pause · A2 recap · A3 objectives · **F2 difficulty fix** |
-| 2 | **F1 bigger maps** · **F3 unlock ladder** · **F5 contracts** · B4 AI overhaul · D1 bundle split · C1 snow walls · C2 industrial structures |
+| 2 | **B6 tank steering bug** · **F1 bigger maps** · **F3 unlock ladder** · **F5 contracts** · B4 AI overhaul · D1 bundle split · C1 snow walls · C2 industrial structures |
 | 3 | B1 survival · B2 vehicle differentiation · F4 deep trees · F6 bosses · C3 rotor/damage · E1 nameplates/scoreboard · D4 tests+CI |
 | 4 | B3 specials · A4/A5 settings+mobile · C4–C6 polish · D2 KTX2 · D3 GHCR · E2/E3 · F7/F8 · B5/D5/D6 · E4 (if needed) |
