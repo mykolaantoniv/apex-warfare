@@ -65,6 +65,7 @@ export function attachGlb(
   cfg: VehicleConfig,
   hideOnLoad: readonly Mesh[],
   onReady?: (handback: GlbHandback) => void,
+  attachTo?: TransformNode,
 ): void {
   const url = cfg.visual.modelUrl;
   if (!url) return;
@@ -81,7 +82,11 @@ export function attachGlb(
         return;
       }
       const holder = new TransformNode("glb", scene);
-      holder.parent = root;
+      // Most controllers rotate `root` itself each frame, so the GLB parents there by default.
+      // The tank is the one exception: heading (yaw) is applied to a `hull` child node (kept
+      // separate from `root` so the turret can rotate independently for auto-aim) — callers that
+      // need the GLB to follow a specific yaw-bearing node pass it via `attachTo`.
+      holder.parent = attachTo ?? root;
       holder.scaling.setAll(cfg.visual.modelScale ?? 1);
       holder.rotation.y = ((cfg.visual.yawOffset ?? 0) * Math.PI) / 180;
       holder.position.y = cfg.visual.heightOffset ?? 0;
