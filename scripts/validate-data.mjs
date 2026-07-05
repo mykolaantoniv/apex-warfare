@@ -12,8 +12,67 @@ const REQUIRED = {
   missions: ["id", "mapId", "name", "type", "killTarget", "enemyRoster", "unlock"],
 };
 
+// Keep in sync with `PropKey` (src/engine/Props.ts) — this script runs under plain node ESM so it
+// can't import the .ts source; the prop kit changes rarely enough that a literal list is fine.
+const VALID_PROP_KEYS = new Set([
+  "pineSnow",
+  "tree",
+  "treeAutumn",
+  "treeDead",
+  "rock",
+  "rockLarge",
+  "mountain",
+  "cabin",
+  "container",
+  "barrel",
+  "pipe",
+  "crate",
+  "barrier",
+  "barrierLow",
+]);
+
 let errors = 0;
 const ids = new Set();
+
+/** Validates a map's optional hand-authored `props` array (BACKLOG §C0). Returns error count. */
+function checkMapProps(file, data) {
+  let errs = 0;
+  if (!Array.isArray(data.props)) {
+    console.error(`✗ ${file}: "props" must be an array`);
+    return 1;
+  }
+  const half = typeof data.half === "number" ? data.half : undefined;
+  data.props.forEach((p, i) => {
+    const tag = `${file}: props[${i}]`;
+    if (typeof p !== "object" || p === null || Array.isArray(p)) {
+      console.error(`✗ ${tag} must be an object`);
+      errs++;
+      return;
+    }
+    if (typeof p.key !== "string" || !VALID_PROP_KEYS.has(p.key)) {
+      console.error(`✗ ${tag}.key "${p.key}" is not a valid PropKey`);
+      errs++;
+    }
+    for (const field of ["x", "z"]) {
+      if (typeof p[field] !== "number" || !Number.isFinite(p[field])) {
+        console.error(`✗ ${tag}.${field} must be a finite number`);
+        errs++;
+      } else if (half !== undefined && Math.abs(p[field]) > half) {
+        console.error(`✗ ${tag}.${field}=${p[field]} is outside the map's half-extent (${half})`);
+        errs++;
+      }
+    }
+    if (p.yaw !== undefined && typeof p.yaw !== "number") {
+      console.error(`✗ ${tag}.yaw must be a number (degrees)`);
+      errs++;
+    }
+    if (p.s !== undefined && (typeof p.s !== "number" || p.s <= 0)) {
+      console.error(`✗ ${tag}.s must be a positive number`);
+      errs++;
+    }
+  });
+  return errs;
+}
 
 async function walk(dir) {
   let entries;
@@ -52,6 +111,9 @@ async function check(file, dir) {
   if (kind === "missions" && (!Array.isArray(data.enemyRoster) || data.enemyRoster.length === 0)) {
     console.error(`✗ ${file}: enemyRoster must be a non-empty array`);
     errors++;
+  }
+  if (kind === "maps" && data.props !== undefined) {
+    errors += checkMapProps(file, data);
   }
   if (typeof data.id === "string") {
     if (ids.has(data.id)) {

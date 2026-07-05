@@ -1,4 +1,5 @@
 import type { UnlockRule } from "../core/types";
+import type { PropKey } from "../engine/Props";
 
 export type RGB = [number, number, number];
 
@@ -20,6 +21,22 @@ export interface WaterRegion {
   level: number;
 }
 
+/**
+ * A single hand-authored prop placement for a map's central POI / road strips (see BACKLOG §C0).
+ * `key` selects a `PropKey` from the shared prop kit (`src/engine/Props.ts`) — anything else fails
+ * `npm run validate-data`. Rendered through the same `scatterProp`/`propColliders` thin-instance
+ * path as the RNG biome scatter (bucketed by key, one draw call per key).
+ */
+export interface AuthoredProp {
+  key: PropKey;
+  x: number;
+  z: number;
+  /** Yaw in DEGREES (matches the `cover` convention). Default 0. */
+  yaw?: number;
+  /** Per-instance scale multiplier. Default 1. */
+  s?: number;
+}
+
 export interface MapConfig {
   id: string;
   name: string;
@@ -34,6 +51,12 @@ export interface MapConfig {
   drains: Array<[number, number]>;
   /** Optional lake/river. Boats spawn + patrol here; visual water plane at `level`. */
   water?: WaterRegion;
+  /**
+   * Optional hand-authored layout: a central POI (village/depot/rail-yard/plaza/bridge) plus
+   * "road strip" sightlines, built from the shared prop kit. Augments (not replaces) the biome's
+   * RNG scatter — `dressProps` thins RNG placements near authored clusters so nothing overlaps.
+   */
+  props?: AuthoredProp[];
   spawns: {
     player: [number, number];
     enemy: Array<[number, number]>;
