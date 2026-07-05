@@ -1,11 +1,22 @@
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { readFileSync } from "node:fs";
 
 // Apex Warfare — Vite config.
 // Note: @babylonjs/havok ships a .wasm; `optimizeDeps.exclude` keeps Vite from trying to
 // pre-bundle it, and we let it be served as an asset. The PWA precaches it for offline.
+
+// D5 error telemetry tags each event with the game version — read it once at build time
+// from package.json so it stays in sync with the published version (no runtime fetch).
+const pkgJson = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8")) as {
+  version: string;
+};
+
 export default defineConfig({
   base: "./",
+  define: {
+    __APP_VERSION__: JSON.stringify(pkgJson.version),
+  },
   build: {
     target: "es2021",
     sourcemap: true,

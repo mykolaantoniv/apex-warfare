@@ -1,4 +1,8 @@
 import { App } from "./core/App";
+import { installErrorTelemetry } from "./telemetry/errors";
+
+// D5 error telemetry: install as early as possible so it catches boot-time failures too.
+installErrorTelemetry();
 
 const canvas = document.getElementById("renderCanvas");
 if (!(canvas instanceof HTMLCanvasElement)) throw new Error("renderCanvas missing");
