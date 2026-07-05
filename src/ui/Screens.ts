@@ -314,7 +314,8 @@ export class Screens {
   }
 
   // ---------- Results (overlay) ----------
-  showResults(r: MissionResult, mission: MissionConfig, cb: { cont: () => void }): void {
+  /** `retry` restarts the same mission immediately (A2) — only surfaced on a loss. */
+  showResults(r: MissionResult, mission: MissionConfig, cb: { cont: () => void; retry: () => void }): void {
     this.root.classList.remove("hidden", "showcase");
     this.root.replaceChildren();
     const p = el("div", "screen anim-in");
@@ -322,11 +323,40 @@ export class Screens {
 
     const won = r.outcome === "won";
     p.appendChild(el("div", "screen-title " + (won ? "victory" : "defeat"), won ? "VICTORY" : "DEFEAT"));
+
+    // A2: defeat recap — killer + survival stats, shown before the action buttons.
+    if (!won) p.appendChild(this.defeatRecap(r));
+
     p.appendChild(el("div", "results-stars big", stars(r.stars)));
     p.appendChild(el("div", "screen-sub", `${mission.name} · ${fmtTime(r.timeSec)}`));
     p.appendChild(el("div", "scrap-earn", `+ ${r.scrap} SCRAP`));
-    const cont = el("button", "btn primary", "CONTINUE");
+
+    const btnRow = el("div", "results-btns");
+    if (!won) {
+      const retry = el("button", "btn primary", "RETRY");
+      retry.onclick = cb.retry;
+      btnRow.appendChild(retry);
+    }
+    const cont = el("button", "btn" + (won ? " primary" : " ghost"), "CONTINUE");
     cont.onclick = cb.cont;
-    p.appendChild(cont);
+    btnRow.appendChild(cont);
+    p.appendChild(btnRow);
   }
+
+  private defeatRecap(r: MissionResult): HTMLElement {
+    const box = el("div", "defeat-recap");
+    const killer = r.killerVehicle ? `${(r.killerName ?? "HOSTILE").toUpperCase()} · ${r.killerVehicle.toUpperCase()}` : "UNKNOWN";
+    box.appendChild(recapRow("KILLED BY", killer));
+    box.appendChild(recapRow("SURVIVED", fmtTime(r.timeSec)));
+    box.appendChild(recapRow("KILLS", String(r.kills)));
+    box.appendChild(recapRow("DAMAGE DEALT", String(Math.round(r.damageDealt))));
+    return box;
+  }
+}
+
+function recapRow(label: string, value: string): HTMLElement {
+  const row = el("div", "recap-row");
+  row.appendChild(el("span", "recap-label", label));
+  row.appendChild(el("span", "recap-value", value));
+  return row;
 }

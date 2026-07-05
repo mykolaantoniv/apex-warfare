@@ -6,7 +6,7 @@ import {
   Color3,
   Vector3,
 } from "@babylonjs/core";
-import type { Target, Team } from "../core/types";
+import type { AttackerTag, Target, Team } from "../core/types";
 import type { WaterRegion } from "../data/types";
 import { FeelDirector } from "../feel/FeelDirector";
 import type { WeaponSfx } from "../feel/Audio";
@@ -40,11 +40,13 @@ interface Projectile {
   life: number;
   active: boolean;
   homing: Target | null;
+  owner: AttackerTag;
 }
 
 const POOL = 96;
 const DEG2RAD = Math.PI / 180;
 const HOMING_TURN = 3.5; // how hard guided shots curve toward the locked target
+const NO_OWNER: AttackerTag = { name: "", vehicle: "" };
 
 /** Pooled ballistic projectiles with stretched tracers. No physics body per round. */
 export class ProjectileSystem {
@@ -53,6 +55,9 @@ export class ProjectileSystem {
   private readonly look = new Vector3();
   private readonly knock = new Vector3();
   private readonly water: WaterRegion | null;
+  /** Running total of post-armor damage the player's team has landed on enemies this mission
+   * (drives the defeat/victory recap's "DAMAGE DEALT" stat, A2). */
+  totalPlayerDamageDealt = 0;
 
   constructor(
     scene: Scene,
@@ -73,11 +78,21 @@ export class ProjectileSystem {
       mesh.isPickable = false;
       mesh.material = i % 2 === 0 ? playerMat : enemyMat; // reassigned on spawn
       mesh.metadata = { playerMat, enemyMat };
-      this.pool.push({ mesh, vel: new Vector3(), team: "player", dmg: 0, splash: 0, life: 0, active: false, homing: null });
+      this.pool.push({
+        mesh,
+        vel: new Vector3(),
+        team: "player",
+        dmg: 0,
+        splash: 0,
+        life: 0,
+        active: false,
+        homing: null,
+        owner: NO_OWNER,
+      });
     }
   }
 
-  spawn(pos: Vector3, dir: Vector3, cfg: WeaponConfig, team: Team, homing: Target | null = null): void {
+  spawn(pos: Vector3, dir: Vector3, cfg: WeaponConfig, team: Team, homing: Target | null = null, owner: AttackerTag = NO_OWNER): void {
     const p = this.pool.find((x) => !x.active);
     if (!p) return;
 
@@ -99,6 +114,7 @@ export class ProjectileSystem {
     p.splash = cfg.splashRadius;
     p.life = cfg.lifetime;
     p.homing = homing && homing.alive ? homing : null;
+    p.owner = owner;
     p.vel.copyFrom(this.scratchDir).scaleInPlace(cfg.speed);
     p.mesh.position.copyFrom(pos);
     p.mesh.isVisible = true;
@@ -163,8 +179,9 @@ export class ProjectileSystem {
         if (dx * dx + dy * dy + dz * dz <= r * r) {
           this.knock.copyFrom(p.vel).normalize().scaleInPlace(p.dmg * 0.35);
           const wasAlive = t.alive;
-          t.takeDamage(p.dmg, pos, this.knock);
+          const dealt = t.takeDamage(p.dmg, pos, this.knock, p.owner);
           if (p.team === "player" && t.team === "enemy") {
+            this.totalPlayerDamageDealt += dealt;
             this.feel.playerLandedHit(wasAlive && !t.alive);
           }
           this.impact(p, true);
@@ -212,6 +229,7 @@ export class Weapon {
     private readonly cfg: WeaponConfig,
     private readonly team: Team,
     private readonly projectiles: ProjectileSystem,
+    private readonly owner: AttackerTag = NO_OWNER,
   ) {
     this.mag = cfg.magazine;
   }
@@ -249,7 +267,7 @@ export class Weapon {
       this.reloadTimer = this.cfg.reloadTime;
       return false;
     }
-    this.projectiles.spawn(pos, dir, this.cfg, this.team, homing);
+    this.projectiles.spawn(pos, dir, this.cfg, this.team, homing, this.owner);
     this.mag -= 1;
     this.cooldown = 1 / this.cfg.fireRate;
     if (this.mag <= 0) this.reloadTimer = this.cfg.reloadTime;

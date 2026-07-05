@@ -2,7 +2,7 @@ import { Scene, Vector3, Color3, ShadowGenerator } from "@babylonjs/core";
 import { createController, VehicleController } from "../vehicles/VehicleController";
 import { Weapon } from "../vehicles/Weapon";
 import { FeelDirector } from "../feel/FeelDirector";
-import type { InputState, Target, Team, VehicleConfig } from "../core/types";
+import type { AttackerTag, InputState, Target, Team, VehicleConfig } from "../core/types";
 
 /** A fighting unit = vehicle controller + health + weapon. Implements Target (can be hit). */
 export class Combatant implements Target {
@@ -13,6 +13,9 @@ export class Combatant implements Target {
   alive = true;
   /** Locked target for auto-aim + homing (player only; enemies leave null). */
   lockTarget: Target | null = null;
+  /** Who landed the killing blow (for the defeat recap, A2) — null while alive/unknown. */
+  killerName: string | null = null;
+  killerVehicle: string | null = null;
 
   private hp: number;
   private readonly maxHp: number;
@@ -70,17 +73,22 @@ export class Combatant implements Target {
     this.finisher = true;
   }
 
-  takeDamage(amount: number, hitPos: Vector3, knock: Vector3): void {
-    if (!this.alive) return;
+  takeDamage(amount: number, hitPos: Vector3, knock: Vector3, attacker?: AttackerTag): number {
+    if (!this.alive) return 0;
     const dealt = amount * (1 - this.armor);
     this.hp -= dealt;
     this.controller.applyImpulse(knock);
     this.feel.hit(hitPos, dealt, false);
-    if (this.hp <= 0) this.die();
+    if (this.hp <= 0) this.die(attacker);
+    return dealt;
   }
 
-  private die(): void {
+  private die(attacker?: AttackerTag): void {
     this.alive = false;
+    if (attacker) {
+      this.killerName = attacker.name;
+      this.killerVehicle = attacker.vehicle;
+    }
     if (this.finisher) this.feel.finisher(this.controller.position);
     else this.feel.explode(this.controller.position, 1.2);
     if (this.team === "enemy") this.controller.dispose();

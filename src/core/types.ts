@@ -5,13 +5,20 @@ export type QualityTier = "low" | "med" | "high" | "ultra";
 
 export type Team = "player" | "enemy";
 
+/** Identifies who fired a shot — surfaced on death for the defeat recap (A2). */
+export interface AttackerTag {
+  readonly name: string;
+  readonly vehicle: string;
+}
+
 /** Anything a projectile can hit and damage. */
 export interface Target {
   readonly team: Team;
   readonly radius: number;
   alive: boolean;
   getPosition(): Vector3;
-  takeDamage(amount: number, hitPos: Vector3, knock: Vector3): void;
+  /** Returns the actual (post-armor) damage applied, for damage-dealt stat tracking. */
+  takeDamage(amount: number, hitPos: Vector3, knock: Vector3, attacker?: AttackerTag): number;
 }
 
 /** Normalized twin-stick input. x = strafe (right +), y = forward (+). Magnitude 0..1. */
