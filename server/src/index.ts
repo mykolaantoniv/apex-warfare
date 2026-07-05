@@ -5,6 +5,8 @@ import { WebSocketTransport } from "@colyseus/ws-transport";
 import { monitor } from "@colyseus/monitor";
 import { ArenaRoom } from "./rooms/ArenaRoom";
 import { ARENA_ROOM } from "../../shared/net";
+import type { LogBatch } from "../../shared/telemetry";
+import { appendLogEvents, readLogEvents } from "./log";
 
 const port = Number(process.env.PORT ?? 2567);
 
@@ -23,8 +25,26 @@ app.use((req, res, next) => {
   next();
 });
 
+// Small JSON bodies only — telemetry batches are capped client-side (LOG_BATCH_MAX events).
+app.use(express.json({ limit: "256kb" }));
+
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "apex-warfare-server" });
+});
+
+// D5 error telemetry: client buffers window.onerror/unhandledrejection and POSTs batches
+// here; we validate + append to an in-memory ring buffer. GET /log is a quick ops check —
+// no external service, no DB.
+app.post("/log", (req, res) => {
+  const body = req.body as Partial<LogBatch> | undefined;
+  const events = Array.isArray(body?.events) ? body.events : [];
+  const accepted = appendLogEvents(events, req.ip ?? "unknown");
+  res.json({ ok: true, accepted });
+});
+
+app.get("/log", (_req, res) => {
+  const entries = readLogEvents();
+  res.json({ count: entries.length, entries });
 });
 
 // Room browser for the lobby: list joinable arena rooms + their metadata.
