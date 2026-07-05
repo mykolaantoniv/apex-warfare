@@ -48,6 +48,15 @@ const DEG2RAD = Math.PI / 180;
 const HOMING_TURN = 3.5; // how hard guided shots curve toward the locked target
 const NO_OWNER: AttackerTag = { name: "", vehicle: "" };
 
+// C5: tracer box is built with this baseline depth (meters); we stretch it via `scaling.z` so
+// faster rounds draw a longer streak and always overlap frame-to-frame (no gaps) at 60fps.
+const TRACER_BASE_DEPTH = 0.7;
+// Visualize this many seconds of travel as the tracer's length — comfortably more than one
+// frame's travel distance even at 30fps on medium tier, so the streak never shows a gap.
+const TRACER_TIME_S = 0.05;
+const TRACER_MIN_LEN = 0.6;
+const TRACER_MAX_LEN = 3.6;
+
 /** Pooled ballistic projectiles with stretched tracers. No physics body per round. */
 export class ProjectileSystem {
   private readonly pool: Projectile[] = [];
@@ -120,6 +129,10 @@ export class ProjectileSystem {
     p.mesh.isVisible = true;
     const meta = p.mesh.metadata as { playerMat: StandardMaterial; enemyMat: StandardMaterial };
     p.mesh.material = team === "player" ? meta.playerMat : meta.enemyMat;
+    // C5: tracer length scales with muzzle velocity — faster rounds get a longer streak so the
+    // tracer reads as continuous motion (no gaps) instead of a fixed-length dash.
+    const tracerLen = Math.min(TRACER_MAX_LEN, Math.max(TRACER_MIN_LEN, cfg.speed * TRACER_TIME_S));
+    p.mesh.scaling.z = tracerLen / TRACER_BASE_DEPTH;
 
     this.feel.muzzle(pos, weaponSfx(cfg));
   }
