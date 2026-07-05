@@ -31,6 +31,13 @@ export interface MissionResult {
   stars: number;
   timeSec: number;
   scrap: number;
+  /** Enemies destroyed this mission (A2 defeat recap). */
+  kills: number;
+  /** Post-armor damage the player's side landed on enemies (A2 defeat recap). */
+  damageDealt: number;
+  /** Who/what landed the killing blow on the player — null on a win or unknown cause. */
+  killerName: string | null;
+  killerVehicle: string | null;
 }
 
 export interface RosterEntry {
@@ -122,7 +129,7 @@ export class Mission {
       "player",
       this.shadows,
       params.playerSpawn,
-      new Weapon(params.playerWeapon, "player", this.projectiles),
+      new Weapon(params.playerWeapon, "player", this.projectiles, { name: "PLAYER", vehicle: params.playerVehicle.name }),
       this.feel,
       new Color3(0.15, 0.85, 1),
     );
@@ -140,7 +147,7 @@ export class Mission {
         "player", // friendly — enemy fire hits it, player fire passes through
         this.shadows,
         params.ally.spawn,
-        new Weapon(params.ally.weapon, "player", this.projectiles),
+        new Weapon(params.ally.weapon, "player", this.projectiles, { name: "CONVOY", vehicle: params.ally.vehicle.name }),
         this.feel,
         new Color3(0.2, 0.55, 1),
       );
@@ -204,14 +211,53 @@ export class Mission {
     return this.zone !== null;
   }
 
-  /** World point + label the objective indicator should aim at (convoy for escort, else zone). */
+  /**
+   * Persistent one-line objective text (A3) shown under the HUD timer for EVERY mission type —
+   * live-updates every frame from mission state so it reflects a kill/zone tick within one frame.
+   */
+  get objectiveLine(): string {
+    if (this.escortMode && this.ally) {
+      return `PROTECT THE CONVOY — ${Math.max(0, Math.round(this.ally.healthPct))}% HP`;
+    }
+    if (this.captureMode) {
+      const pct = Math.round(this.captureProgress * 100);
+      return this.cfg.type === "extract" ? `REACH EXTRACTION — ${pct}%` : `CAPTURE THE ZONE — ${pct}%`;
+    }
+    if (this.cfg.type === "survival") {
+      return `SURVIVE — ${this.deadCount} DOWN · ${this.aliveCount} ENGAGED`;
+    }
+    const remaining = Math.max(0, this.cfg.killTarget - this.deadCount);
+    return `DESTROY ${this.cfg.killTarget} ENEMIES — ${remaining} LEFT`;
+  }
+
+  /**
+   * World point + label the objective indicator should aim at: convoy/zone if the mission has
+   * one, else the centroid of alive enemies (deathmatch/survival) so the arrow is always useful.
+   */
   objectiveTarget(): { pos: Vector3; label: string } | null {
     if (this.escortMode && this.ally?.alive) return { pos: this.ally.getPosition(), label: "CONVOY" };
     if (this.zone) {
       this.zonePoint.set(this.zone.x, 1, this.zone.z);
       return { pos: this.zonePoint, label: this.cfg.type === "extract" ? "EXTRACT" : "ZONE" };
     }
-    return null;
+    return this.enemyCentroid();
+  }
+
+  /** Centroid of alive enemies (world-space, ground height) — null if none are alive. */
+  private enemyCentroid(): { pos: Vector3; label: string } | null {
+    let sx = 0;
+    let sz = 0;
+    let n = 0;
+    for (const e of this.enemies) {
+      if (!e.c.alive) continue;
+      const p = e.c.getPosition();
+      sx += p.x;
+      sz += p.z;
+      n++;
+    }
+    if (n === 0) return null;
+    this.zonePoint.set(sx / n, 1, sz / n);
+    return { pos: this.zonePoint, label: "HOSTILES" };
   }
 
   private inZone(pos: Vector3): boolean {
@@ -305,13 +351,15 @@ export class Mission {
     const pick = this.pickEntry();
 
     const archetype = i % 2 === 0 ? "rusher" : "sniper";
+    // Killer callsign shown on the defeat recap (A2) if this unit lands the fatal shot.
+    const callsign = pick.boss ? "THE BRUTE" : `HOSTILE-${i + 1}`;
     const enemy = new Combatant(
       this.scene,
       pick.vehicle,
       "enemy",
       this.shadows,
       pos,
-      new Weapon(pick.weapon, "enemy", this.projectiles),
+      new Weapon(pick.weapon, "enemy", this.projectiles, { name: callsign, vehicle: pick.vehicle.name }),
       this.feel,
       enemyAccent(pick.vehicle.id),
     );
@@ -430,15 +478,19 @@ export class Mission {
     const time = this.elapsed;
     const kills = this.deadCount;
     const rew = rewardsFor(this.index, this.finale);
+    // A2 defeat recap: damage the player's side landed + who fired the fatal shot (null on a win).
+    const damageDealt = Math.round(this.projectiles.totalPlayerDamageDealt);
+    const killerName = this.player.killerName;
+    const killerVehicle = this.player.killerVehicle;
 
     if (this.cfg.type === "survival") {
       const stars = starsFor(this.cfg, this.index, time, 0);
-      return { outcome: "won", stars, timeSec: time, scrap: rew.scrapBase + kills * rew.scrapPerKill };
+      return { outcome: "won", stars, timeSec: time, scrap: rew.scrapBase + kills * rew.scrapPerKill, kills, damageDealt, killerName, killerVehicle };
     }
     if (this.state === "lost") {
-      return { outcome: "lost", stars: 0, timeSec: time, scrap: kills * rew.scrapPerKill };
+      return { outcome: "lost", stars: 0, timeSec: time, scrap: kills * rew.scrapPerKill, kills, damageDealt, killerName, killerVehicle };
     }
     const stars = starsFor(this.cfg, this.index, time, this.player.healthPct);
-    return { outcome: "won", stars, timeSec: time, scrap: rew.scrapBase + kills * rew.scrapPerKill };
+    return { outcome: "won", stars, timeSec: time, scrap: rew.scrapBase + kills * rew.scrapPerKill, kills, damageDealt, killerName, killerVehicle };
   }
 }

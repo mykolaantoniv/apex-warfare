@@ -108,9 +108,24 @@ export class App {
         tutorial: !this.save.data.tutorialDone,
         motionBlur: this.save.data.settings.motionBlur,
       },
+      {
+        save: this.save,
+        persist: () => void this.save.persist(),
+        onVolume: (v) => this.audio.setVolume(v),
+      },
       (r) => void this.finish(missionId, r),
+      () => this.quitMission(),
     );
     this.runner.start();
+  }
+
+  /** A1 QUIT TO MENU: tear the mission scene down cleanly and return to mission select — no
+   * reload, no leaked scene (the next launch() creates a fresh one). */
+  private quitMission(): void {
+    this.runner?.dispose();
+    this.runner = null;
+    this.hud.hide();
+    this.showTab("missions");
   }
 
   private serverUrl(): string {
@@ -182,7 +197,8 @@ export class App {
     await this.save.persist();
 
     this.hud.hide();
-    this.screens.showResults(r, mission, { cont: () => this.showTab("missions") });
+    // A2: RETRY relaunches the same mission immediately — same path as PLAY, no menu hop.
+    this.screens.showResults(r, mission, { cont: () => this.showTab("missions"), retry: () => this.launch(missionId) });
   }
 }
 

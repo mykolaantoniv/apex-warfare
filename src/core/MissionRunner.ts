@@ -18,10 +18,12 @@ import { Hud } from "../ui/Hud";
 import { Radar } from "../ui/Radar";
 import { Tutorial } from "../ui/Tutorial";
 import { ObjectiveMarker } from "../ui/ObjectiveMarker";
+import { PauseMenu } from "../ui/PauseMenu";
 import { Content } from "../data/Content";
 import { clamp } from "./math";
 import type { QualityTier } from "../core/types";
 import type { WaterRegion } from "../data/types";
+import type { Save } from "../save/Save";
 
 export interface LaunchConfig {
   missionId: string;
@@ -30,6 +32,14 @@ export interface LaunchConfig {
   tier: QualityTier;
   tutorial: boolean;
   motionBlur: boolean;
+}
+
+/** External services the pause menu needs (A1) — kept separate from LaunchConfig, which is
+ * pure mission data. */
+export interface MissionServices {
+  save: Save;
+  persist: () => void;
+  onVolume: (v: number) => void;
 }
 
 /** Builds and runs a single mission scene; reports its result and tears itself down. */
@@ -45,12 +55,16 @@ export class MissionRunner {
   private radar!: Radar;
   private tutorial: Tutorial | null = null;
   private objMarker: ObjectiveMarker | null = null;
+  private pauseMenu: PauseMenu | null = null;
+  private pauseBtn: HTMLElement | null = null;
   private playerModel = "heli";
   private water: WaterRegion | null = null;
   private readonly trailPos = new Vector3();
   private maxSpeed = 9;
   private stopped = false;
   private resultSent = false;
+  /** Frozen by ESC / the HUD pause button (A1): sim + physics stop, world stays rendered. */
+  private paused = false;
 
   constructor(
     private readonly engine: Engine,
@@ -58,7 +72,9 @@ export class MissionRunner {
     private readonly audio: Audio,
     private readonly hud: Hud,
     private readonly cfg: LaunchConfig,
+    private readonly services: MissionServices,
     private readonly onFinish: (r: MissionResult) => void,
+    private readonly onQuit: () => void,
   ) {}
 
   start(): void {
@@ -124,8 +140,15 @@ export class MissionRunner {
     this.hud.showBanner(bannerFor(missionCfg));
     const obj = this.mission.objectiveHud;
     if (obj) this.hud.setObjective(obj.frac, obj.label);
-    if (this.mission.hasObjective) this.objMarker = new ObjectiveMarker(this.scene, this.engine);
+    this.hud.setObjectiveLine(this.mission.objectiveLine);
+    // A3: every mission gets an edge-of-screen arrow (zone/convoy, else the enemy cluster).
+    this.objMarker = new ObjectiveMarker(this.scene, this.engine);
     if (this.cfg.tutorial) this.tutorial = new Tutorial(() => undefined);
+
+    // A1: ESC (desktop) / the HUD ⏸ button opens the pause overlay and freezes the sim.
+    this.pauseBtn = byId("pauseBtn");
+    this.pauseBtn.addEventListener("click", this.onPauseClick);
+    window.addEventListener("keydown", this.onKeyDown);
 
     // Wait for the sky/IBL HDRI before running the loop so the world never appears black on
     // entry (the skybox + every PBR surface depend on it). Safety timeout so a stalled/failed
@@ -143,8 +166,38 @@ export class MissionRunner {
     }
   }
 
+  /** A1: toggle the pause overlay. Physics stop stepping and the sim frame body below is
+   * skipped entirely, but `scene.render()` still runs every frame so the frozen world stays
+   * visible behind the glass panel. */
+  private togglePause(): void {
+    if (this.stopped) return;
+    this.paused = !this.paused;
+    this.scene.physicsEnabled = !this.paused;
+    if (this.paused) {
+      if (!this.pauseMenu) this.pauseMenu = new PauseMenu();
+      this.pauseMenu.show(this.services.save, {
+        resume: () => this.togglePause(),
+        quit: () => this.onQuit(),
+        onVolume: this.services.onVolume,
+        persist: this.services.persist,
+      });
+    } else {
+      this.pauseMenu?.hide();
+    }
+  }
+
+  private readonly onKeyDown = (e: KeyboardEvent): void => {
+    if (e.key === "Escape") this.togglePause();
+  };
+
+  private readonly onPauseClick = (): void => this.togglePause();
+
   private readonly frame = (): void => {
     if (this.stopped) return;
+    if (this.paused) {
+      this.scene.render(); // world stays visible, frozen — nothing else advances (AC1)
+      return;
+    }
     const dtMs = this.engine.getDeltaTime();
     const dtReal = clamp(dtMs / 1000, 0, 0.05);
 
@@ -182,6 +235,7 @@ export class MissionRunner {
     this.hud.setSpecial(this.mission.specialReady01);
     const obj = this.mission.objectiveHud;
     if (obj) this.hud.setObjective(obj.frac, obj.label);
+    this.hud.setObjectiveLine(this.mission.objectiveLine);
     if (this.objMarker) {
       const t = this.mission.objectiveTarget();
       this.objMarker.update(t?.pos ?? null, player.getPosition(), t?.label ?? "");
@@ -212,6 +266,9 @@ export class MissionRunner {
   dispose(): void {
     this.stopped = true;
     this.engine.stopRenderLoop(this.frame);
+    window.removeEventListener("keydown", this.onKeyDown);
+    this.pauseBtn?.removeEventListener("click", this.onPauseClick);
+    this.pauseMenu?.dispose();
     this.input.dispose();
     this.tutorial?.dispose();
     this.objMarker?.dispose();

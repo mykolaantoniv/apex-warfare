@@ -16,9 +16,11 @@ export class Hud {
   private readonly objectiveFill: HTMLElement;
   private readonly objectivePct: HTMLElement;
   private readonly objectiveLabel: HTMLElement;
+  private readonly objectiveText: HTMLElement;
 
   private lastKill = 0;
   private combo = 0;
+  private lastObjectiveText = "";
 
   constructor() {
     this.root = must("hud");
@@ -37,6 +39,14 @@ export class Hud {
     this.objectiveFill = must("hudObjectiveFill");
     this.objectivePct = must("hudObjectivePct");
     this.objectiveLabel = must("hudObjectiveLabel");
+    this.objectiveText = must("hudObjectiveText");
+  }
+
+  /** Persistent one-line objective (A3) — cheap no-op if the text hasn't changed this frame. */
+  setObjectiveLine(text: string): void {
+    if (text === this.lastObjectiveText) return;
+    this.lastObjectiveText = text;
+    this.objectiveText.textContent = text;
   }
 
   /** Show + drive the capture-objective bar (0..1). Call hideObjective() for non-capture. */
@@ -82,6 +92,8 @@ export class Hud {
     this.lowHp.classList.remove("active");
     this.lowHp.style.opacity = "0";
     this.setHp(100);
+    this.lastObjectiveText = "";
+    this.objectiveText.textContent = "";
   }
 
   setMission(text: string): void {
