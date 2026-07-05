@@ -3,7 +3,10 @@ import { CameraRig } from "../engine/CameraRig";
 import { Particles } from "./Particles";
 import { Audio, WeaponSfx } from "./Audio";
 import { DamageNumbers } from "./DamageNumbers";
+import { Wrecks } from "./Wrecks";
 import type { Hud } from "../ui/Hud";
+
+const KILL_STOP_MS = 160; // brief slow-mo on every kill — beefier than a hit, lighter than finisher()
 
 /**
  * Central "juice" hub. Callers fire one method and get the whole stack —
@@ -12,6 +15,8 @@ import type { Hud } from "../ui/Hud";
 export class FeelDirector {
   readonly particles: Particles;
   readonly numbers: DamageNumbers;
+  /** Pooled death-moment wrecks (C3b) — every kill is handed off here instead of disposing. */
+  readonly wrecks: Wrecks;
 
   private hud: Hud | null = null;
   private stopMs = 0;
@@ -24,6 +29,7 @@ export class FeelDirector {
   ) {
     this.particles = new Particles(scene);
     this.numbers = new DamageNumbers(scene, engine);
+    this.wrecks = new Wrecks(this.particles);
   }
 
   bindHud(hud: Hud): void {
@@ -33,6 +39,7 @@ export class FeelDirector {
   dispose(): void {
     this.audio.stopEngine();
     this.numbers.dispose();
+    this.wrecks.dispose();
   }
 
   /** 1 = normal, 0.05 = frozen during hitstop. Game multiplies gameplay dt by this. */
@@ -83,6 +90,17 @@ export class FeelDirector {
     this.audio.explosion(power, pos);
   }
 
+  /**
+   * Every kill (not just the mission-final one): a satisfying "kill moment" — bigger explosion,
+   * bigger shake and a brief slow-mo, clearly beefier than a regular `hit()` but deliberately
+   * lighter than `finisher()` (no dedicated extra zoom-punch, ~half the hitstop). Never call this
+   * together with `finisher()` for the same kill — `Combatant.die()` picks one or the other.
+   */
+  killImpact(pos: Vector3): void {
+    this.explode(pos, 1.3);
+    this.stopMs = Math.max(this.stopMs, KILL_STOP_MS);
+  }
+
   /** Mission-final kill: heavier slow-mo + zoom for the money shot. */
   finisher(pos: Vector3): void {
     this.explode(pos, 1.6);
@@ -100,5 +118,6 @@ export class FeelDirector {
     if (this.stopMs > 0) this.stopMs -= dtRealMs;
     this.particles.update(dtRealMs);
     this.numbers.update(dtRealMs / 1000);
+    this.wrecks.update(dtRealMs / 1000);
   }
 }

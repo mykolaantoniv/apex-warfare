@@ -6,6 +6,7 @@ import {
   MeshBuilder,
   Color3,
   PBRMaterial,
+  StandardMaterial,
   Quaternion,
   SceneLoader,
 } from "@babylonjs/core";
@@ -73,6 +74,12 @@ export function attachGlb(
   const rig = GLB_RIGS[file] ?? {};
   SceneLoader.ImportMeshAsync("", dir, file, scene)
     .then((res) => {
+      // The vehicle may have died (Wrecks pool disposed it) or been torn down while the GLB was
+      // still in flight — don't reparent freshly loaded meshes under a disposed node.
+      if (root.isDisposed()) {
+        for (const m of res.meshes) m.dispose();
+        return;
+      }
       const holder = new TransformNode("glb", scene);
       holder.parent = root;
       holder.scaling.setAll(cfg.visual.modelScale ?? 1);
@@ -95,11 +102,41 @@ export function attachGlb(
         if (node) spinners.push(node);
       }
       for (const m of hideOnLoad) m.setEnabled(false); // swap primitives out for the real art
+      // If the vehicle was already killed (wreck) before this GLB finished loading, char the
+      // freshly attached meshes too — otherwise a shiny un-charred model would pop in over a
+      // wreck mid-collapse.
+      if ((root.metadata as { charred?: boolean } | null)?.charred) charAllMaterials(root);
       onReady?.({ meshes: res.meshes, spinners });
     })
     .catch((e: unknown) => {
       console.warn(`[apex] GLB "${url}" failed to load; keeping primitive model.`, e);
     });
+}
+
+/**
+ * Darken every mesh under `root` IN PLACE (mutates existing material properties — no new
+ * materials/meshes allocated) so a destroyed vehicle instantly reads as a charred wreck.
+ * Handles both the procedural PBR parts built below and whatever material a loaded GLB
+ * brought with it. Idempotent; call once per death.
+ */
+export function charAllMaterials(root: TransformNode): void {
+  const meta = (root.metadata as { charred?: boolean } | null) ?? {};
+  meta.charred = true;
+  root.metadata = meta;
+  for (const m of root.getChildMeshes(false)) {
+    const mat = m.material;
+    if (mat instanceof PBRMaterial) {
+      mat.albedoColor.scaleInPlace(0.1);
+      mat.emissiveColor.set(0, 0, 0);
+      mat.metallic = 0.05;
+      mat.roughness = 0.95;
+      if (mat.clearCoat.isEnabled) mat.clearCoat.intensity = 0;
+    } else if (mat instanceof StandardMaterial) {
+      mat.diffuseColor.scaleInPlace(0.1);
+      mat.emissiveColor.set(0, 0, 0);
+      mat.specularColor.set(0, 0, 0);
+    }
+  }
 }
 
 // Shared vehicle geometry — used by the controllers (with physics) AND the garage showcase

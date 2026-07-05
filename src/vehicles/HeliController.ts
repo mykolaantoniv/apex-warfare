@@ -12,7 +12,7 @@ import {
 } from "@babylonjs/core";
 import type { InputState, VehicleConfig } from "../core/types";
 import { clamp, expDamp, scratch } from "../core/math";
-import { attachGlb, buildHeliModel } from "./models";
+import { attachGlb, buildHeliModel, charAllMaterials } from "./models";
 
 const GRAVITY = 9.81;
 const DEG2RAD = Math.PI / 180;
@@ -100,10 +100,21 @@ export class HeliController {
     this.agg.body.applyImpulse(impulse, this.body.getAbsolutePosition());
   }
 
-  /** Destroyed: hide the wreck (physics body left to settle; disposed with the scene). */
+  /**
+   * Destroyed: char the hull in place (no new meshes/materials) and give it a small random
+   * off-center impulse so it visibly tumbles; `fixedUpdate` no longer runs for a dead unit, so
+   * gravity + this impulse make it fall and crash-settle naturally under Havok. The wreck stays
+   * on screen (owned by the FeelDirector's `Wrecks` pool) instead of being hidden/disposed.
+   */
   kill(): void {
-    this.visual.setEnabled(false);
-    this.rotor.rotation.y = 0;
+    charAllMaterials(this.visual);
+    this.rotor.rotation.y = 0; // stop the blur illusion; a wreck's blades sit still
+    const body = this.agg.body;
+    const c = this.body.getAbsolutePosition();
+    body.applyImpulse(
+      new Vector3((Math.random() - 0.5) * 4, 1, (Math.random() - 0.5) * 4),
+      new Vector3(c.x + (Math.random() - 0.5) * 1.2, c.y + (Math.random() - 0.5) * 0.3, c.z + (Math.random() - 0.5) * 1.2),
+    );
   }
 
   /** Physics step — steer + throttle forward flight (chase-cam style). */

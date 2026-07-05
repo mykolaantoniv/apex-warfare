@@ -13,7 +13,7 @@ import type { InputState, VehicleConfig } from "../core/types";
 import type { WaterRegion } from "../data/types";
 import { expDamp, lerpAngle } from "../core/math";
 import type { VehicleController } from "./VehicleController";
-import { attachGlb, buildTankModel } from "./models";
+import { attachGlb, buildTankModel, charAllMaterials } from "./models";
 
 const DEG2RAD = Math.PI / 180;
 
@@ -80,8 +80,16 @@ export class TankController implements VehicleController {
     this.agg.body.applyImpulse(impulse, this.body.getAbsolutePosition());
   }
 
+  /** Destroyed: char the hull in place + a small off-center impulse so it visibly shudders/
+   *  cants over instead of freezing mid-pose. */
   kill(): void {
-    this.visual.setEnabled(false);
+    charAllMaterials(this.visual);
+    const body = this.agg.body;
+    const c = this.body.getAbsolutePosition();
+    body.applyImpulse(
+      new Vector3((Math.random() - 0.5) * 3, 1.5, (Math.random() - 0.5) * 3),
+      new Vector3(c.x + (Math.random() - 0.5) * 1.0, c.y + (Math.random() - 0.5) * 0.2, c.z + (Math.random() - 0.5) * 1.0),
+    );
   }
 
   /** Point the turret at a world position (from the locked target); null = face forward. */
