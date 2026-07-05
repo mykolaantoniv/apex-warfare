@@ -64,9 +64,19 @@ export class TankController implements VehicleController {
     this.hull = model.hull;
     this.turret = model.turret;
     for (const m of model.parts) shadows.addShadowCaster(m);
-    attachGlb(scene, this.visual, cfg, model.parts, ({ meshes }) => {
-      for (const m of meshes) shadows.addShadowCaster(m as Mesh);
-    });
+    // Parent the GLB under `hull` (not `visual`/root) so it inherits `hullYaw` each frame — the
+    // root itself never rotates for tanks (see `frameUpdate`), only the hull child does, with the
+    // turret rotating independently as a sibling for auto-aim.
+    attachGlb(
+      scene,
+      this.visual,
+      cfg,
+      model.parts,
+      ({ meshes }) => {
+        for (const m of meshes) shadows.addShadowCaster(m as Mesh);
+      },
+      this.hull,
+    );
   }
 
   get position(): Vector3 {
